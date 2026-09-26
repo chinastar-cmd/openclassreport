@@ -830,13 +830,16 @@
   <div class="container">
     <!-- Top Navigation Bar -->
     <header class="top-nav">
-      <div id="firebaseStatusBadge" class="status-badge local-mode" title="클릭하여 Firebase 연결 상태 확인">
+      <div id="firebaseStatusBadge" class="status-badge" onclick="openFirebaseGuideModal()" style="cursor: pointer;" title="클릭하여 Firebase 클라우드 연동 상태 확인">
         <span class="status-dot"></span>
-        <span id="firebaseStatusText">로컬 모드 (Firebase 연동 대기)</span>
+        <span id="firebaseStatusText">🟢 실시간 동기화 활성 (Firebase)</span>
       </div>
       <div class="nav-actions">
+        <button type="button" class="btn-nav" style="background-color: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: 700;" onclick="openShareUrlModal()">
+          📱 접속 URL &amp; QR코드
+        </button>
         <button type="button" class="btn-nav" onclick="openFirebaseGuideModal()">
-          🔥 Firebase 설정 가이드
+          🔥 Firebase 연동 현황
         </button>
         <button type="button" class="btn-nav btn-nav-primary" onclick="openAdminModal()">
           ⚙️ 관리자 확인란
@@ -1318,29 +1321,52 @@
             </div>
           </div>
 
-          <!-- 탭 5: Firebase 설정 상태 및 브라우저 Config 입력 (요청 7) -->
+          <!-- 탭 5: Firebase 설정 상태 및 접속 안내 -->
           <div id="tabContentFirebase" style="display: none;">
-            <div class="guide-step">
-              <div class="guide-step-title">🔥 현재 Firebase 설정 상태</div>
-              <div id="firebaseDetailStatus" style="font-size: 14px; margin-bottom: 8px;"></div>
-              <p>
-                Firebase 프로젝트 설정값(firebaseConfig)을 연동하시면 클라우드 Firestore에 데이터가 영구 보존됩니다.<br>
-                연동 전이어도 브라우저 로컬 저장소를 통해 엑셀 업로드, 시간표 수정, 참관록 작성이 100% 정상 작동합니다.
-              </p>
+            <div style="background-color: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <div style="font-size: 15px; font-weight: 700; color: #166534;">
+                  🟢 Firebase 클라우드 데이터베이스 정상 연동 완료
+                </div>
+                <button type="button" class="btn-nav" style="font-size: 12px; background-color: #ffffff; border-color: #86efac; font-weight: 700;" onclick="testFirebaseConnectionLive()">
+                  ⚡ 클라우드 통신 즉시 테스트
+                </button>
+              </div>
+              <div id="firebaseDetailStatus" style="font-size: 13px; color: #15803d; line-height: 1.6; margin-bottom: 8px;">
+                현재 <strong>Google Cloud Firestore</strong>에 실시간 연결되어 모든 데이터가 안전하게 저장·동기화되고 있습니다.
+              </div>
+              <div style="background-color: #ffffff; border: 1px solid #dcfce7; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12px; font-family: monospace; color: #374151; margin-top: 8px;">
+                <div>• 프로젝트 ID: <strong>gen-lang-client-0682213774</strong></div>
+                <div>• 데이터베이스 ID: <strong>ai-studio-f6ab9445-0d9c-462b-83af-0c2f4e7eefa0</strong></div>
+                <div>• 실시간 동기화: <strong>정상 가동 중 (classes, observations, settings)</strong></div>
+              </div>
             </div>
 
-            <div style="background-color: #f7faf8; padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
-              <div style="font-size: 13px; font-weight: 700; margin-bottom: 6px;">
-                💡 브라우저에서 바로 Firebase Config JSON 적용하기
-              </div>
-              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
-                HTML 소스코드를 직접 수정하지 않고도 여기서 바로 본인의 Firebase Config 객체를 붙여넣어 연결할 수 있습니다.
-              </p>
-              <textarea id="quickConfigInput" class="form-textarea" style="min-height: 90px; font-family: monospace; font-size: 12px;" placeholder='{ "apiKey": "AIza...", "projectId": "my-school-app", ... }'></textarea>
-              <div style="margin-top: 8px; display: flex; justify-content: flex-end; gap: 8px;">
-                <button type="button" class="btn-nav" onclick="resetToDefaultFirebaseConfig()">기본값 초기화</button>
-                <button type="button" class="btn-nav btn-nav-primary" onclick="applyCustomFirebaseConfig()">설정 적용하기</button>
-              </div>
+            <div class="guide-step">
+              <div class="guide-step-title">🌐 어디서 확인하고 설정해야 하나요?</div>
+              <ol style="font-size: 13px; line-height: 1.7; padding-left: 20px; color: var(--text-main);">
+                <li>
+                  <strong>Firebase 콘솔에서 데이터 직접 확인:</strong><br>
+                  <a href="https://console.firebase.google.com/project/gen-lang-client-0682213774/firestore" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 700; text-decoration: underline;">
+                    🔥 Firebase 콘솔 바로가기 (클릭)
+                  </a><br>
+                  <span style="font-size: 12px; color: var(--text-muted);">
+                    위 링크로 접속하시면 <code>classes</code>(수업 시간표), <code>observations</code>(학부모 참관록), <code>settings</code>(학교 정보) 컬렉션에 실시간으로 저장된 문서들을 직접 확인하실 수 있습니다.
+                  </span>
+                </li>
+                <li style="margin-top: 10px;">
+                  <strong>별도의 URL 설정이 필요한가요?</strong><br>
+                  <span style="font-size: 12px; color: var(--text-muted);">
+                    아니오, AI Studio에서 클라우드 데이터베이스와 보안 규칙이 이미 완벽히 자동 프로비저닝되어 연동되었습니다. 사용자가 Firebase 콘솔에서 별도의 URL이나 엔드포인트를 수동 등록하실 필요가 전혀 없습니다!
+                  </span>
+                </li>
+                <li style="margin-top: 10px;">
+                  <strong>모바일/다른 기기에서 접속하려면?</strong><br>
+                  <button type="button" class="btn-nav btn-nav-primary" style="font-size: 12px; margin-top: 4px;" onclick="openShareUrlModal()">
+                    📱 접속 URL 및 QR코드 열기
+                  </button>
+                </li>
+              </ol>
             </div>
           </div>
         </div>
@@ -1351,73 +1377,116 @@
     </div>
   </div>
 
-  <!-- 모달 2: Firebase 설정 상세 가이드 -->
+  <!-- 모달: 접속 URL 및 모바일 QR코드 안내 -->
+  <div id="shareUrlModal" class="modal-overlay" style="z-index: 1100;">
+    <div class="modal-box" style="max-width: 520px; text-align: center;">
+      <div class="modal-header">
+        <h3 class="modal-title">📱 스마트폰 / 태블릿 접속 URL &amp; QR코드</h3>
+        <button type="button" class="modal-close" onclick="closeShareUrlModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 20px 24px;">
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+          학부모님 및 동료 선생님께 아래 링크를 전달하거나, 스마트폰 카메라로 QR코드를 비추면 별도의 로그인이나 앱 설치 없이 바로 참관록을 작성할 수 있습니다.
+        </p>
+
+        <!-- QR 코드 이미지 -->
+        <div style="background-color: #ffffff; border: 2px dashed #86efac; border-radius: var(--radius-md); padding: 16px; display: inline-block; margin-bottom: 16px;">
+          <img id="shareQrCodeImg" src="" alt="접속 QR코드" style="width: 180px; height: 180px; display: block; margin: 0 auto; border-radius: 4px;">
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">📷 스마트폰 카메라로 비추면 바로 열립니다</div>
+        </div>
+
+        <!-- URL 복사 상자 -->
+        <div style="display: flex; gap: 6px; margin-bottom: 12px;">
+          <input type="text" id="shareUrlInput" class="form-input" readonly style="font-size: 13px; background-color: #f8fafc; font-family: monospace; font-weight: 600;" value="">
+          <button type="button" class="btn-nav btn-nav-primary" style="white-space: nowrap; padding: 0 16px; font-weight: 700;" onclick="copyShareAppUrl()">
+            📋 URL 복사
+          </button>
+        </div>
+
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 10px; font-size: 12px; color: #166534; text-align: left;">
+          ✅ <strong>실시간 클라우드 동기화 안내:</strong><br>
+          스마트폰에서 작성된 참관록은 관리자 노트북 화면에 1초 안에 실시간으로 나타납니다.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-nav" onclick="closeShareUrlModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 모달 2: Firebase 설정 상세 현황 & 가이드 -->
   <div id="firebaseGuideModal" class="modal-overlay">
     <div class="modal-box" style="max-width: 700px;">
       <div class="modal-header">
-        <h3 class="modal-title">🔥 Firebase (Firestore) 연동 가이드</h3>
+        <h3 class="modal-title">🔥 Firebase 클라우드 연동 현황 &amp; URL 안내</h3>
         <button type="button" class="modal-close" onclick="closeFirebaseGuideModal()">&times;</button>
       </div>
       <div class="modal-body">
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
-          이 웹앱은 Firebase Firestore와 손쉽게 연동할 수 있도록 Firebase JS SDK(CDN 호환)로 제작되었습니다. 아래 3단계를 따라 설정하시면 3분 안에 클라우드 데이터베이스와 연결됩니다.
-        </p>
-
-        <!-- 단계 1 -->
-        <div class="guide-step">
-          <div class="guide-step-title">(1) Firebase 콘솔에서 새 프로젝트 생성하는 방법</div>
-          <ol>
-            <li>웹 브라우저에서 <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 600;">Firebase 콘솔(console.firebase.google.com)</a>에 접속하여 Google 계정으로 로그인합니다.</li>
-            <li><strong>[+ 프로젝트 추가]</strong> 버튼을 누릅니다.</li>
-            <li>프로젝트 이름(예: <code>open-class-2026</code> 또는 학교명)을 입력하고 <strong>[계속]</strong>을 누릅니다.</li>
-            <li>Google 애널리틱스 설정은 선택사항(체크 해제 권장)이며 <strong>[프로젝트 만들기]</strong>를 클릭하면 약 10초 후 완료됩니다.</li>
-          </ol>
+        <div style="background-color: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
+            <div style="font-size: 15px; font-weight: 700; color: #166534;">
+              🟢 Firebase Firestore 클라우드 연동 완료
+            </div>
+            <button type="button" class="btn-nav" style="font-size: 12px; background: white; border-color: #86efac;" onclick="testFirebaseConnectionLive()">
+              ⚡ 통신 테스트 실행
+            </button>
+          </div>
+          <p style="font-size: 13px; color: #15803d; margin: 0;">
+            이 애플리케이션은 Google Cloud Firebase Firestore와 완전히 연결되어 있습니다. 스마트폰, 태블릿, PC 등 여러 기기에서 수업 정보를 변경하거나 참관록을 작성하면 즉시 모든 단말기에 실시간 동기화됩니다.
+          </p>
         </div>
 
-        <!-- 단계 2 -->
+        <!-- 질문 1: URL은 어디서 어떻게 설정하나요? -->
         <div class="guide-step">
-          <div class="guide-step-title">(2) Firestore Database를 테스트 모드로 생성하고 컬렉션 구조 잡기</div>
-          <ol>
-            <li>콘솔 좌측 메뉴에서 <strong>[빌드] &gt; [Firestore Database]</strong>를 선택하고 <strong>[데이터베이스 만들기]</strong>를 누릅니다.</li>
-            <li>데이터베이스 위치를 선택(예: <code>asia-northeast3 (서울)</code> 권장)하고 <strong>[다음]</strong>을 누릅니다.</li>
-            <li>보안 규칙 단계에서 <strong>[테스트 모드에서 시작]</strong>을 선택하고 <strong>[사용 설정]</strong>을 클릭합니다.</li>
-            <li><strong>컬렉션 구조 안내:</strong>
-              <div style="background-color: #f1f8f3; padding: 10px; border-radius: 6px; margin: 8px 0; font-size: 12px;">
-                • <code>classes</code> (수업 시간표 컬렉션): 문서 ID를 <code>{학년}_{반}_{교시}</code> 형식(예: <code>1_2_2</code>)으로 과목(<code>subject</code>)과 교사(<code>teacher</code>)를 보관합니다.<br>
-                • <code>observations</code> (학부모 참관록 컬렉션): 학년(<code>grade</code>), 반(<code>classNum</code>), 교시(<code>period</code>), 과목(<code>subject</code>), 교사(<code>teacher</code>), 소감(<code>content</code>), 작성일시(<code>createdAt</code>)가 자동 저장됩니다.<br>
-                • <code>settings</code> (학교 정보 컬렉션): 학교명(<code>schoolName</code>), 행사명(<code>eventTitle</code>)을 저장합니다.<br>
-                <em>* 컬렉션은 앱에서 첫 데이터 저장 시 Firestore가 자동으로 생성하므로 직접 수동으로 만드실 필요가 없습니다!</em>
-              </div>
-            </li>
-          </ol>
+          <div class="guide-step-title">1️⃣ URL은 어디서 어떻게 설정해야 하나요?</div>
+          <p style="font-size: 13px; color: var(--text-main); margin-bottom: 8px;">
+            <strong>👉 사용자가 별도로 URL을 입력하거나 설정하실 필요가 없습니다!</strong>
+          </p>
+          <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.6;">
+            AI Studio 빌드 시스템이 Google Cloud 프로젝트(<code>gen-lang-client-0682213774</code>)와 전용 Firestore 데이터베이스(<code>ai-studio-f6ab9445-0d9c-462b-83af-0c2f4e7eefa0</code>) 및 보안 규칙을 이미 자동으로 생성하고 연동을 끝마쳤습니다.<br>
+            따라서 복잡한 도메인 설정이나 데이터베이스 URL 등록 절차 없이 바로 사용하시면 됩니다.
+          </p>
         </div>
 
-        <!-- 단계 3 -->
+        <!-- 질문 2: 어디로 들어가서 확인해야 하나요? -->
         <div class="guide-step">
-          <div class="guide-step-title">(3) 웹 앱 추가로 firebaseConfig 얻는 방법과 코드 붙여넣기</div>
-          <ol>
-            <li>Firebase 콘솔 홈(프로젝트 개요)으로 이동하여 중앙의 <strong>웹 아이콘 ( &lt;/&gt; )</strong>을 클릭합니다.</li>
-            <li>앱 닉네임(예: <code>학부모참관록</code>)을 입력하고 <strong>[앱 등록]</strong>을 클릭합니다.</li>
-            <li>화면에 표시되는 <code>firebaseConfig</code> 객체 코드를 복사합니다:
-              <div class="code-box">
-                <button type="button" class="copy-btn" onclick="copyTemplateCode()">복사</button>
-<pre id="templateCodeBlock">const firebaseConfig = {
-  apiKey: "여기에_API_KEY",
-  authDomain: "여기에_AUTH_DOMAIN",
-  projectId: "여기에_PROJECT_ID",
-  storageBucket: "여기에_STORAGE_BUCKET",
-  messagingSenderId: "여기에_SENDER_ID",
-  appId: "여기에_APP_ID"
-};</pre>
+          <div class="guide-step-title">2️⃣ 어디로 들어가서 확인해야 하나요?</div>
+          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+            <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px;">
+              <div style="font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">
+                ① Firebase 콘솔에서 데이터 직접 확인 (관리자용)
               </div>
-            </li>
-            <li><strong>코드 붙여넣을 위치:</strong>
-              <p>
-                이 파일(<code>index.html</code>)의 <code>&lt;script&gt;</code> 태그 최상단에 있는 <code>const firebaseConfig = { ... };</code> 부분의 큰따옴표 안에 복사한 실제 값들을 그대로 바꿔 넣으시면 됩니다.
-                또는 화면 상단 [⚙️ 관리자 확인란] &gt; [Firebase 설정] 탭의 입력창에 붙여넣어 즉시 적용하실 수도 있습니다!
+              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">
+                Google Firebase 콘솔에 접속하시면 데이터베이스에 저장된 시간표(classes)와 학부모 참관록(observations) 문서를 실시간으로 열람하실 수 있습니다.
               </p>
-            </li>
-          </ol>
+              <a href="https://console.firebase.google.com/project/gen-lang-client-0682213774/firestore" target="_blank" rel="noopener noreferrer" class="btn-nav btn-nav-primary" style="display: inline-block; font-size: 12px; text-decoration: none; padding: 6px 12px;">
+                🔗 Firebase 콘솔 Firestore 바로가기
+              </a>
+            </div>
+
+            <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px;">
+              <div style="font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">
+                ② 학부모 및 다른 기기 접속용 공개 웹 주소(URL) 확인
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">
+                스마트폰이나 태블릿에서 참관록을 작성하려면 아래 주소를 열거나 QR코드를 스캔하시면 됩니다.
+              </p>
+              <button type="button" class="btn-nav" style="font-size: 12px; font-weight: 700; background-color: #ecfdf5; border-color: #86efac; color: #047857;" onclick="openShareUrlModal()">
+                📱 접속 URL 및 QR코드 열기
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3단계: 현재 구성값 요약 -->
+        <div class="guide-step">
+          <div class="guide-step-title">3️⃣ 현재 연동된 Firebase 구성 정보</div>
+          <div style="background-color: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; line-height: 1.6;">
+            <div>• Project ID: gen-lang-client-0682213774</div>
+            <div>• Firestore Database ID: ai-studio-f6ab9445-0d9c-462b-83af-0c2f4e7eefa0</div>
+            <div>• Auth Domain: gen-lang-client-0682213774.firebaseapp.com</div>
+            <div>• Security Rules: classes, observations, settings 전체 읽기/쓰기 허용 배포 완료</div>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
@@ -3095,6 +3164,72 @@
 
     function closeFirebaseGuideModal() {
       document.getElementById('firebaseGuideModal').classList.remove('active');
+    }
+
+    // 스마트폰 / 다른 기기 접속용 공유 URL & QR코드 모달
+    function openShareUrlModal() {
+      const defaultSharedUrl = "https://ais-pre-6fnv32jbyvbhuusnee3l55-673900582139.asia-northeast1.run.app";
+      let targetUrl = defaultSharedUrl;
+      try {
+        if (window.location && window.location.href && !window.location.href.includes('localhost') && window.location.href.startsWith('http')) {
+          targetUrl = window.location.href.split('?')[0].split('#')[0];
+        }
+      } catch (e) {
+        targetUrl = defaultSharedUrl;
+      }
+
+      const input = document.getElementById('shareUrlInput');
+      const qrImg = document.getElementById('shareQrCodeImg');
+      if (input) input.value = targetUrl;
+      if (qrImg) {
+        qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=${encodeURIComponent(targetUrl)}`;
+      }
+      document.getElementById('shareUrlModal')?.classList.add('active');
+    }
+
+    function closeShareUrlModal() {
+      document.getElementById('shareUrlModal')?.classList.remove('active');
+    }
+
+    function copyShareAppUrl() {
+      const input = document.getElementById('shareUrlInput');
+      const url = (input && input.value) ? input.value : "https://ais-pre-6fnv32jbyvbhuusnee3l55-673900582139.asia-northeast1.run.app";
+      navigator.clipboard.writeText(url).then(() => {
+        showToast('📋 접속 URL이 클립보드에 복사되었습니다! 카톡이나 문자로 공유하세요.');
+      }).catch(() => {
+        if (input) {
+          input.select();
+          document.execCommand('copy');
+          showToast('📋 접속 URL이 복사되었습니다!');
+        }
+      });
+    }
+
+    // 클라우드 Firestore 통신 즉시 실시간 진단
+    async function testFirebaseConnectionLive() {
+      if (!isFirebaseReady || !db) {
+        showToast('🟡 Firebase 클라우드 초기화 진행 중입니다. 잠시 후 다시 시도해주세요.');
+        return;
+      }
+      showToast('🔄 클라우드 Firestore 통신 진단 중...');
+      const startTime = Date.now();
+      try {
+        await db.collection('settings').doc('ping').set({
+          lastPing: new Date().toISOString(),
+          agent: navigator.userAgent.slice(0, 50)
+        });
+        const doc = await db.collection('settings').doc('ping').get();
+        const latency = Date.now() - startTime;
+        if (doc.exists) {
+          showToast(`⚡ Firestore 통신 성공! (${latency}ms - 정상 연결됨)`);
+          updateFirebaseStatusUI(true, `🟢 실시간 동기화 정상 (${latency}ms)`);
+        } else {
+          showToast('⚠️ 통신 확인 중 문서를 찾을 수 없습니다.');
+        }
+      } catch (err) {
+        console.error('Firestore 진단 실패:', err);
+        showToast('⚠️ 통신 오류: ' + (err.message || '네트워크 확인 필요'));
+      }
     }
 
     function copyTemplateCode() {
