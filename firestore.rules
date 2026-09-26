@@ -1,0 +1,19 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Classes: anyone can read schedule, anyone can write/manage during open class
+    match /classes/{classId} {
+      allow read, write: if true;
+    }
+
+    // Observations: anyone can submit and read observations during open class
+    match /observations/{observationId} {
+      allow read, create, update, delete: if true;
+    }
+
+    // Settings: school name and grade-class counts
+    match /settings/{settingId} {
+      allow read, write: if true;
+    }
+  }
+}
