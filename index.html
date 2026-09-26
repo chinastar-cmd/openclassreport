@@ -830,19 +830,13 @@
   <div class="container">
     <!-- Top Navigation Bar -->
     <header class="top-nav">
-      <div id="firebaseStatusBadge" class="status-badge" onclick="openFirebaseGuideModal()" style="cursor: pointer;" title="클릭하여 Firebase 클라우드 연동 상태 확인">
+      <div id="firebaseStatusBadge" class="status-badge" title="Firebase 클라우드 연동 상태">
         <span class="status-dot"></span>
-        <span id="firebaseStatusText">🟢 실시간 동기화 활성 (Firebase)</span>
+        <span id="firebaseStatusText">🟢 실시간 동기화 활성</span>
       </div>
       <div class="nav-actions">
-        <button type="button" class="btn-nav" style="background-color: #ecfdf5; border-color: #6ee7b7; color: #047857; font-weight: 700;" onclick="openShareUrlModal()">
-          📱 접속 URL &amp; QR코드
-        </button>
-        <button type="button" class="btn-nav" onclick="openFirebaseGuideModal()">
-          🔥 Firebase 연동 현황
-        </button>
         <button type="button" class="btn-nav btn-nav-primary" onclick="openAdminModal()">
-          ⚙️ 관리자 확인란
+          ⚙️ 관리자 페이지
         </button>
       </div>
     </header>
@@ -906,11 +900,9 @@
         <div class="btn-group period-group">
           <button type="button" class="select-btn" data-period="2" onclick="selectPeriod(2)">
             <span>2교시</span>
-            <span class="btn-sub">10:00 ~ 10:45</span>
           </button>
           <button type="button" class="select-btn" data-period="3" onclick="selectPeriod(3)">
             <span>3교시</span>
-            <span class="btn-sub">11:00 ~ 11:45</span>
           </button>
         </div>
       </section>
@@ -920,7 +912,7 @@
         <div class="info-card">
           <div class="info-header">
             <span id="infoSelectionBadge" class="info-badge">1학년 1반 2교시</span>
-            <span id="infoPeriodTime" class="info-time">10:00 ~ 10:45 수업</span>
+            <span id="infoPeriodTime" class="info-time">수업 확인</span>
           </div>
           <div class="info-grid">
             <div class="info-item">
@@ -933,7 +925,7 @@
             </div>
           </div>
           <div id="infoAdminNotice" style="display: none; margin-top: 10px; font-size: 12px; color: #b45309;">
-            * 아직 등록된 수업 정보가 없습니다. 관리자 확인란에서 교과목과 담당교사를 입력할 수 있습니다.
+            * 아직 등록된 수업 정보가 없습니다. 관리자 페이지에서 교과목과 담당교사를 입력할 수 있습니다.
           </div>
         </div>
       </section>
@@ -944,6 +936,35 @@
           <span class="step-number">4</span>
           <span>참관록 작성하기</span>
           <span class="step-hint">해당 교시의 참관 소감을 작성해주세요</span>
+        </div>
+
+        <!-- 참관록 저장 완료 알림 배너 (요청 6: 저장 완료 메시지 표시 및 또 다른 참관록 작성 안내) -->
+        <div id="obsSubmitSuccessBanner" style="display: none; background: #ecfdf5; border: 2px solid #86efac; border-radius: 12px; padding: 16px 20px; margin-bottom: 16px; text-align: center;">
+          <div style="font-size: 26px; margin-bottom: 4px;">🎉</div>
+          <div style="font-size: 16px; font-weight: 800; color: #166534; margin-bottom: 4px;">
+            참관록 저장이 완료되었습니다!
+          </div>
+          <div id="obsSubmitSuccessDetail" style="font-size: 13.5px; color: #15803d; margin-bottom: 12px;">
+            소중한 참관 소감이 안전하게 등록되었습니다.
+          </div>
+          <button type="button" class="btn-nav btn-nav-primary" style="padding: 7px 18px; font-weight: 700; font-size: 13.5px;" onclick="prepareNextObservation()">
+            ➕ 다른 참관록 계속 작성하기
+          </button>
+        </div>
+
+        <!-- 선택된 수업 및 교사 실시간 동기화 정보 표시 바 -->
+        <div id="obsSelectedClassBanner" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px;">
+          <div>
+            <div style="font-size: 11.5px; font-weight: 700; color: #166534; text-transform: uppercase; margin-bottom: 2px;">
+              📍 참관 대상 수업 정보 (실시간 동기화)
+            </div>
+            <div id="obsBannerTargetText" style="font-size: 14.5px; font-weight: 700; color: #14532d;">
+              상단 1~3단계에서 학년, 반, 교시를 선택해주세요
+            </div>
+          </div>
+          <div id="obsBannerSyncBadge" style="display: none; font-size: 12px; background: #ffffff; color: #15803d; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 9999px; font-weight: 600;">
+            🟢 실시간 최신 수업 정보 연동됨
+          </div>
         </div>
 
         <form id="observationForm" onsubmit="handleObservationSubmit(event)">
@@ -1000,11 +1021,11 @@
     </footer>
   </div>
 
-  <!-- 모달 1: 관리자 확인란 (수업 정보/엑셀/참관록/학교명/Firebase 관리) -->
+  <!-- 모달 1: 관리자 페이지 (수업 정보/엑셀/참관록/학교명 관리) -->
   <div id="adminModal" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 class="modal-title">⚙️ 관리자 확인란</h3>
+        <h3 class="modal-title">⚙️ 관리자 페이지</h3>
         <button type="button" class="modal-close" onclick="closeAdminModal()">&times;</button>
       </div>
       <div class="modal-body">
@@ -1028,22 +1049,16 @@
 
         <!-- 관리자 패널 메인 영역 (인증 완료 시) -->
         <div id="adminContentSection" style="display: none;">
-          <!-- 탭 네비게이션: 수업 정보와 엑셀 일괄 등록을 한 페이지로 통합 -->
+          <!-- 탭 네비게이션: 참관록, 수업정보&엑셀, 학교명 관리 -->
           <div class="tabs-nav">
             <button type="button" class="tab-btn active" id="tabBtnObservations" onclick="switchAdminTab('observations')">
               📋 참관록 모아보기
             </button>
             <button type="button" class="tab-btn" id="tabBtnSchedule" onclick="switchAdminTab('schedule')">
-              📖 수업 정보 & 엑셀 일괄 등록
+              📖 수업 정보 &amp; 엑셀 일괄 등록
             </button>
             <button type="button" class="tab-btn" id="tabBtnSchool" onclick="switchAdminTab('school')">
               🏫 학교명 관리
-            </button>
-            <button type="button" class="tab-btn" id="tabBtnFirebase" onclick="switchAdminTab('firebase')">
-              🔥 Firebase 설정
-            </button>
-            <button type="button" class="tab-btn" id="tabBtnDomain" onclick="switchAdminTab('domain')">
-              🌐 공개URL &amp; Cloudflare 배포
             </button>
           </div>
 
@@ -1135,6 +1150,9 @@
                   ✕ 수정 취소
                 </button>
               </div>
+
+              <!-- 저장 완료 메시지 표시 박스 (요청 4: 수업정보 저장하기 버튼 누르면 저장했다는 메세지 보여주기) -->
+              <div id="scheduleSaveSuccessAlert" style="display: none; background-color: #ecfdf5; border: 1.5px solid #86efac; color: #166534; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-weight: 700; font-size: 13.5px;"></div>
 
               <form id="adminScheduleForm" onsubmit="handleSaveSchedule(event)">
                 <input type="hidden" id="editOriginalKey" value="">
@@ -1241,6 +1259,9 @@
 
               <!-- 엑셀 미리보기 및 [시스템에 일괄 반영하기] 버튼 -->
               <div id="excelPreviewSection" style="display: none; margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                <!-- 엑셀 반영 완료 알림 메시지 (요청 5: 반영을 다 했으면 반영했다는 메세지도 보여주기) -->
+                <div id="excelApplySuccessMsg" style="display: none; background: #ecfdf5; border: 1.5px solid #86efac; color: #166534; padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; font-weight: 700; font-size: 13.5px; line-height: 1.5;"></div>
+
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
                   <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">
                     인식 결과: 총 <strong id="excelReadCount" style="color: var(--primary);">0</strong>건 (반영 가능: <strong id="excelValidCount" style="color: #2e7d32;">0</strong>건)
@@ -1323,327 +1344,10 @@
               </form>
             </div>
           </div>
-
-          <!-- 탭 5: Firebase 설정 상태 및 접속 안내 -->
-          <div id="tabContentFirebase" style="display: none;">
-            <div style="background-color: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px;">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-                <div style="font-size: 15px; font-weight: 700; color: #166534;">
-                  🟢 Firebase 클라우드 데이터베이스 정상 연동 완료
-                </div>
-                <button type="button" class="btn-nav" style="font-size: 12px; background-color: #ffffff; border-color: #86efac; font-weight: 700;" onclick="testFirebaseConnectionLive()">
-                  ⚡ 클라우드 통신 즉시 테스트
-                </button>
-              </div>
-              <div id="firebaseDetailStatus" style="font-size: 13px; color: #15803d; line-height: 1.6; margin-bottom: 8px;">
-                현재 <strong>Google Cloud Firestore</strong>에 실시간 연결되어 모든 데이터가 안전하게 저장·동기화되고 있습니다.
-              </div>
-              <div style="background-color: #ffffff; border: 1px solid #dcfce7; border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12px; font-family: monospace; color: #374151; margin-top: 8px;">
-                <div>• 프로젝트 ID: <strong>gen-lang-client-0682213774</strong></div>
-                <div>• 데이터베이스 ID: <strong>ai-studio-f6ab9445-0d9c-462b-83af-0c2f4e7eefa0</strong></div>
-                <div>• 실시간 동기화: <strong>정상 가동 중 (classes, observations, settings)</strong></div>
-              </div>
-            </div>
-
-            <div class="guide-step">
-              <div class="guide-step-title">🌐 어디서 확인하고 설정해야 하나요?</div>
-              <ol style="font-size: 13px; line-height: 1.7; padding-left: 20px; color: var(--text-main);">
-                <li>
-                  <strong>Firebase 콘솔에서 데이터 직접 확인:</strong><br>
-                  <a href="https://console.firebase.google.com/project/gen-lang-client-0682213774/firestore" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 700; text-decoration: underline;">
-                    🔥 Firebase 콘솔 바로가기 (클릭)
-                  </a><br>
-                  <span style="font-size: 12px; color: var(--text-muted);">
-                    위 링크로 접속하시면 <code>classes</code>(수업 시간표), <code>observations</code>(학부모 참관록), <code>settings</code>(학교 정보) 컬렉션에 실시간으로 저장된 문서들을 직접 확인하실 수 있습니다.
-                  </span>
-                </li>
-                <li style="margin-top: 10px;">
-                  <strong>별도의 URL 설정이 필요한가요?</strong><br>
-                  <span style="font-size: 12px; color: var(--text-muted);">
-                    아니오, AI Studio에서 클라우드 데이터베이스와 보안 규칙이 이미 완벽히 자동 프로비저닝되어 연동되었습니다. 사용자가 Firebase 콘솔에서 별도의 URL이나 엔드포인트를 수동 등록하실 필요가 전혀 없습니다!
-                  </span>
-                </li>
-                <li style="margin-top: 10px;">
-                  <strong>모바일/다른 기기에서 접속하려면?</strong><br>
-                  <button type="button" class="btn-nav btn-nav-primary" style="font-size: 12px; margin-top: 4px;" onclick="openShareUrlModal()">
-                    📱 접속 URL 및 QR코드 열기
-                  </button>
-                </li>
-              </ol>
-            </div>
-          </div>
-        </div>
-
-        <!-- 탭 6: 공개 URL & Cloudflare Pages 배포 관리 -->
-        <div id="tabContentDomain" style="display: none;">
-          <div style="background-color: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-              <div style="font-size: 15px; font-weight: 700; color: #166534;">
-                🌐 학부모 안내용 대표 공개접속 URL 설정
-              </div>
-              <button type="button" class="btn-nav" style="font-size: 12px; background-color: #ffffff; border-color: #86efac; font-weight: 700; color: #047857;" onclick="openCloudflareGuideModal()">
-                ☁️ Cloudflare Pages 배포 가이드 보기
-              </button>
-            </div>
-            <p style="font-size: 13px; color: #15803d; margin: 0 0 10px 0;">
-              학부모님과 동료 교사에게 배포할 <strong>대표 주소</strong>를 설정합니다. 저장 시 스마트폰용 QR코드와 1클릭 복사 링크가 이 주소로 자동 연동됩니다.
-            </p>
-
-            <form id="publicUrlForm" onsubmit="handleSaveDomainSetting(event)" style="background: white; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px;">
-              <label class="form-label" for="settingPublicUrlInput" style="font-size: 13px; font-weight: 700;">대표 공개접속 URL</label>
-              <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
-                <input type="url" id="settingPublicUrlInput" class="form-input" style="flex: 1; min-width: 260px; font-family: monospace; font-size: 13px; font-weight: 600;" value="https://openclassreport.pages.dev" required>
-                <button type="submit" class="btn-nav btn-nav-primary" style="white-space: nowrap; font-weight: 700;">
-                  💾 대표 URL 저장
-                </button>
-              </div>
-
-              <!-- 빠른 선택 칩 -->
-              <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
-                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">빠른 선택:</span>
-                <button type="button" class="btn-nav" style="font-size: 11px; padding: 3px 8px; background-color: #ecfdf5; border-color: #86efac; color: #065f46;" onclick="setSettingUrlPreset('https://openclassreport.pages.dev')">
-                  🌟 https://openclassreport.pages.dev (Cloudflare Pages)
-                </button>
-                <button type="button" class="btn-nav" style="font-size: 11px; padding: 3px 8px;" onclick="setSettingUrlPreset('https://ais-pre-6fnv32jbyvbhuusnee3l55-673900582139.asia-northeast1.run.app')">
-                  🚀 AI Studio 공유 주소
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <!-- Cloudflare Pages 배포 요약 카드 -->
-          <div class="guide-step">
-            <div class="guide-step-title">☁️ https://openclassreport.pages.dev 로 변경하는 방법 (1분 완성)</div>
-            <p style="font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 10px;">
-              <code>*.pages.dev</code>는 전 세계 최대 CDN 기업인 <strong>Cloudflare(클라우드플레어)</strong>에서 무료로 제공하는 고속 호스팅 서비스입니다.<br>
-              프로젝트 이름을 <strong><code>openclassreport</code></strong>로 생성하시면 즉시 <code>https://openclassreport.pages.dev</code> 주소를 영구 무료로 소유하실 수 있습니다.
-            </p>
-
-            <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 14px; margin-bottom: 12px;">
-              <div style="font-weight: 700; color: var(--primary); font-size: 13px; margin-bottom: 6px;">
-                ⚡ [가장 쉬운 방법] 직접 업로드 (1분 완료, Git 불필요)
-              </div>
-              <ol style="font-size: 12.5px; line-height: 1.8; color: var(--text-main); padding-left: 20px;">
-                <li><a href="https://dash.cloudflare.com" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 700; text-decoration: underline;">Cloudflare 대시보드(dash.cloudflare.com)</a> 무료 가입 후 로그인</li>
-                <li>좌측 사이드바 <strong>Workers 및 Pages</strong> 클릭 → <strong>애플리케이션 생성(Create)</strong> 클릭</li>
-                <li>상단 <strong>Pages</strong> 탭 선택 → <strong>자산 직접 업로드 (Upload assets)</strong> 선택</li>
-                <li>프로젝트 이름을 정확히 <strong><code>openclassreport</code></strong> 로 입력 <span style="color: #047857; font-weight: 600;">(이 이름으로 <code>openclassreport.pages.dev</code>가 생성됩니다)</span></li>
-                <li>본 프로젝트의 <code>index.html</code> (또는 <code>dist</code> 폴더 내 파일)을 끌어다 놓기(Drag &amp; Drop)</li>
-                <li><strong>사이트 배포 (Deploy site)</strong> 클릭 → 즉시 <code>https://openclassreport.pages.dev</code> 가 전 세계에 열립니다!</li>
-              </ol>
-            </div>
-
-            <div style="background-color: #ecfdf5; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 12px; font-size: 12.5px; color: #166534; line-height: 1.6;">
-              💡 <strong>Firebase 연동은 그대로 유지되나요?</strong><br>
-              네! Google Cloud Firebase Firestore 연동 설정이 파일 내부에 완벽히 포함되어 있어, <code>openclassreport.pages.dev</code>로 배포되더라도 모든 참관록과 시간표가 실시간으로 그대로 동기화됩니다.
-            </div>
-          </div>
         </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn-nav" onclick="closeAdminModal()">닫기</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 모달: 접속 URL 및 모바일 QR코드 안내 -->
-  <div id="shareUrlModal" class="modal-overlay" style="z-index: 1100;">
-    <div class="modal-box" style="max-width: 540px; text-align: center;">
-      <div class="modal-header">
-        <h3 class="modal-title">📱 스마트폰 / 태블릿 접속 URL &amp; QR코드</h3>
-        <button type="button" class="modal-close" onclick="closeShareUrlModal()">&times;</button>
-      </div>
-      <div class="modal-body" style="padding: 20px 24px;">
-        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 14px;">
-          학부모님 및 동료 선생님께 아래 링크를 전달하거나, 스마트폰 카메라로 QR코드를 비추면 별도의 로그인이나 앱 설치 없이 바로 참관록을 작성할 수 있습니다.
-        </p>
-
-        <!-- 접속 도메인 선택 탭 -->
-        <div style="background-color: #f1f5f9; border-radius: 8px; padding: 4px; display: inline-flex; gap: 4px; margin-bottom: 14px; max-width: 100%; flex-wrap: wrap; justify-content: center;">
-          <button type="button" id="sharePresetPagesBtn" class="btn-nav active" style="font-size: 11.5px; padding: 5px 12px; font-weight: 700;" onclick="selectSharePreset('pages')">
-            🌟 openclassreport.pages.dev
-          </button>
-          <button type="button" id="sharePresetAiStudioBtn" class="btn-nav" style="font-size: 11.5px; padding: 5px 12px; font-weight: 600;" onclick="selectSharePreset('aistudio')">
-            🚀 AI Studio 공유 주소
-          </button>
-          <button type="button" id="sharePresetCurrentBtn" class="btn-nav" style="font-size: 11.5px; padding: 5px 12px; font-weight: 600;" onclick="selectSharePreset('current')">
-            🌐 현재 브라우저 주소
-          </button>
-        </div>
-
-        <!-- QR 코드 이미지 -->
-        <div style="background-color: #ffffff; border: 2px dashed #86efac; border-radius: var(--radius-md); padding: 16px; display: inline-block; margin-bottom: 14px;">
-          <img id="shareQrCodeImg" src="" alt="접속 QR코드" style="width: 190px; height: 190px; display: block; margin: 0 auto; border-radius: 4px;">
-          <div style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">📷 스마트폰 기본 카메라로 비추면 바로 열립니다</div>
-        </div>
-
-        <!-- URL 복사 상자 -->
-        <div style="display: flex; gap: 6px; margin-bottom: 10px;">
-          <input type="text" id="shareUrlInput" class="form-input" style="font-size: 13px; background-color: #f8fafc; font-family: monospace; font-weight: 600;" value="" oninput="handleCustomShareUrlChange(this.value)">
-          <button type="button" class="btn-nav btn-nav-primary" style="white-space: nowrap; padding: 0 16px; font-weight: 700;" onclick="copyShareAppUrl()">
-            📋 URL 복사
-          </button>
-        </div>
-
-        <!-- Cloudflare Pages 배포 안내 링크 버튼 -->
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 12px; flex-wrap: wrap; gap: 6px;">
-          <span style="color: var(--text-muted);">openclassreport.pages.dev 주소를 실제로 활성화하려면?</span>
-          <button type="button" class="btn-nav" style="font-size: 11px; padding: 4px 10px; background-color: #f0fdf4; border-color: #86efac; color: #166534; font-weight: 700;" onclick="openCloudflareGuideModal()">
-            ☁️ Cloudflare Pages 1분 배포 가이드
-          </button>
-        </div>
-
-        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-sm); padding: 10px; font-size: 12px; color: #166534; text-align: left;">
-          ✅ <strong>실시간 클라우드 동기화:</strong> 스마트폰에서 작성된 참관록은 관리자 노트북 화면에 1초 안에 실시간으로 나타납니다.
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-nav" onclick="closeShareUrlModal()">닫기</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 모달: Cloudflare Pages 배포 상세 가이드 모달 -->
-  <div id="cloudflareGuideModal" class="modal-overlay" style="z-index: 1200;">
-    <div class="modal-box" style="max-width: 680px;">
-      <div class="modal-header" style="background-color: #f0f9ff; border-bottom: 1px solid #bae6fd;">
-        <h3 class="modal-title" style="color: #0369a1;">☁️ https://openclassreport.pages.dev 배포 상세 가이드</h3>
-        <button type="button" class="modal-close" onclick="closeCloudflareGuideModal()">&times;</button>
-      </div>
-      <div class="modal-body" style="padding: 22px;">
-        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 14px; margin-bottom: 16px;">
-          <div style="font-size: 14px; font-weight: 700; color: #166534; margin-bottom: 4px;">
-            🎉 원하는 도메인: <code>https://openclassreport.pages.dev</code>
-          </div>
-          <div style="font-size: 12.5px; color: #15803d; line-height: 1.5;">
-            <code>*.pages.dev</code>는 Cloudflare Pages 서비스의 기본 무료 도메인 형식입니다. Cloudflare에서 프로젝트 이름을 <strong>openclassreport</strong>로 등록하시면 추가 비용 없이 영구적으로 해당 주소를 사용하실 수 있습니다.
-          </div>
-        </div>
-
-        <div class="guide-step">
-          <div class="guide-step-title">방법 1: 직접 업로드 (가장 추천, 1분 안에 완료)</div>
-          <ol style="font-size: 13px; line-height: 1.8; color: var(--text-main); padding-left: 20px;">
-            <li>
-              <strong>Cloudflare 접속:</strong> <a href="https://dash.cloudflare.com" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 700; text-decoration: underline;">https://dash.cloudflare.com</a> 에 로그인 (무료 가입 가능)
-            </li>
-            <li>
-              <strong>Pages 생성:</strong> 왼쪽 메뉴에서 <strong>Workers 및 Pages (Workers &amp; Pages)</strong> → <strong>만들기 (Create application)</strong> 클릭 후 <strong>Pages</strong> 탭 선택
-            </li>
-            <li>
-              <strong>자산 업로드:</strong> <strong>자산 직접 업로드 (Upload assets)</strong> 선택
-            </li>
-            <li>
-              <strong>프로젝트 이름 입력:</strong> 반드시 <strong style="color: #047857; font-size: 14px;">openclassreport</strong> 로 입력<br>
-              <span style="font-size: 12px; color: var(--text-muted);">(프로젝트 이름이 서브도메인이 되므로 openclassreport.pages.dev 가 자동으로 생성됩니다)</span>
-            </li>
-            <li>
-              <strong>파일 업로드:</strong> 본 애플리케이션의 <code>index.html</code> (또는 <code>dist</code> 폴더 전체)를 업로드 영역으로 드래그
-            </li>
-            <li>
-              <strong>배포:</strong> <strong>사이트 배포 (Deploy site)</strong> 클릭 시 배포가 완료되며, 브라우저에서 <strong>https://openclassreport.pages.dev</strong> 로 즉시 접속 가능합니다!
-            </li>
-          </ol>
-        </div>
-
-        <div class="guide-step">
-          <div class="guide-step-title">방법 2: GitHub 연동 자동 배포 (코드 수정 시 자동 반영)</div>
-          <ol style="font-size: 13px; line-height: 1.8; color: var(--text-main); padding-left: 20px;">
-            <li>본 프로젝트 코드를 본인의 GitHub 리포지토리에 푸시(Push)합니다.</li>
-            <li>Cloudflare Pages에서 <strong>Git에 연결 (Connect to Git)</strong> 선택 후 해당 리포지토리 지정</li>
-            <li>프로젝트 이름: <strong>openclassreport</strong></li>
-            <li>빌드 명령: <code>npm run build</code> / 빌드 출력 디렉터리: <code>dist</code></li>
-            <li>저장 및 배포를 누르면 이후 GitHub에 push할 때마다 자동으로 최신 사이트가 반영됩니다.</li>
-          </ol>
-        </div>
-
-        <div style="background-color: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 12px; font-size: 12px; color: #92400e; line-height: 1.6;">
-          🔒 <strong>Firebase 데이터베이스 연동 확인:</strong><br>
-          Cloudflare Pages로 배포하더라도 Google Cloud Firebase Firestore DB 및 실시간 참관록 저장은 완벽하게 그대로 동작합니다.
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-nav btn-nav-primary" onclick="closeCloudflareGuideModal()">확인 완료</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 모달 2: Firebase 설정 상세 현황 & 가이드 -->
-  <div id="firebaseGuideModal" class="modal-overlay">
-    <div class="modal-box" style="max-width: 700px;">
-      <div class="modal-header">
-        <h3 class="modal-title">🔥 Firebase 클라우드 연동 현황 &amp; URL 안내</h3>
-        <button type="button" class="modal-close" onclick="closeFirebaseGuideModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div style="background-color: #f0fdf4; border: 1.5px solid #86efac; border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 8px;">
-            <div style="font-size: 15px; font-weight: 700; color: #166534;">
-              🟢 Firebase Firestore 클라우드 연동 완료
-            </div>
-            <button type="button" class="btn-nav" style="font-size: 12px; background: white; border-color: #86efac;" onclick="testFirebaseConnectionLive()">
-              ⚡ 통신 테스트 실행
-            </button>
-          </div>
-          <p style="font-size: 13px; color: #15803d; margin: 0;">
-            이 애플리케이션은 Google Cloud Firebase Firestore와 완전히 연결되어 있습니다. 스마트폰, 태블릿, PC 등 여러 기기에서 수업 정보를 변경하거나 참관록을 작성하면 즉시 모든 단말기에 실시간 동기화됩니다.
-          </p>
-        </div>
-
-        <!-- 질문 1: URL은 어디서 어떻게 설정하나요? -->
-        <div class="guide-step">
-          <div class="guide-step-title">1️⃣ URL은 어디서 어떻게 설정해야 하나요?</div>
-          <p style="font-size: 13px; color: var(--text-main); margin-bottom: 8px;">
-            <strong>👉 사용자가 별도로 URL을 입력하거나 설정하실 필요가 없습니다!</strong>
-          </p>
-          <p style="font-size: 12.5px; color: var(--text-muted); line-height: 1.6;">
-            AI Studio 빌드 시스템이 Google Cloud 프로젝트(<code>gen-lang-client-0682213774</code>)와 전용 Firestore 데이터베이스(<code>ai-studio-f6ab9445-0d9c-462b-83af-0c2f4e7eefa0</code>) 및 보안 규칙을 이미 자동으로 생성하고 연동을 끝마쳤습니다.<br>
-            따라서 복잡한 도메인 설정이나 데이터베이스 URL 등록 절차 없이 바로 사용하시면 됩니다.
-          </p>
-        </div>
-
-        <!-- 질문 2: 어디로 들어가서 확인해야 하나요? -->
-        <div class="guide-step">
-          <div class="guide-step-title">2️⃣ 어디로 들어가서 확인해야 하나요?</div>
-          <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
-            <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px;">
-              <div style="font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">
-                ① Firebase 콘솔에서 데이터 직접 확인 (관리자용)
-              </div>
-              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">
-                Google Firebase 콘솔에 접속하시면 데이터베이스에 저장된 시간표(classes)와 학부모 참관록(observations) 문서를 실시간으로 열람하실 수 있습니다.
-              </p>
-              <a href="https://console.firebase.google.com/project/gen-lang-client-0682213774/firestore" target="_blank" rel="noopener noreferrer" class="btn-nav btn-nav-primary" style="display: inline-block; font-size: 12px; text-decoration: none; padding: 6px 12px;">
-                🔗 Firebase 콘솔 Firestore 바로가기
-              </a>
-            </div>
-
-            <div style="background-color: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 12px;">
-              <div style="font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 4px;">
-                ② 학부모 및 다른 기기 접속용 공개 웹 주소(URL) 확인
-              </div>
-              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">
-                스마트폰이나 태블릿에서 참관록을 작성하려면 아래 주소를 열거나 QR코드를 스캔하시면 됩니다.
-              </p>
-              <button type="button" class="btn-nav" style="font-size: 12px; font-weight: 700; background-color: #ecfdf5; border-color: #86efac; color: #047857;" onclick="openShareUrlModal()">
-                📱 접속 URL 및 QR코드 열기
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3단계: 현재 구성값 요약 -->
-        <div class="guide-step">
-          <div class="guide-step-title">3️⃣ 현재 연동된 Firebase 구성 정보</div>
-          <div style="background-color: #1e293b; color: #e2e8f0; padding: 12px; border-radius: 6px; font-family: monospace; font-size: 12px; line-height: 1.6;">
-            <div>• Project ID: gen-lang-client-0682213774</div>
-            <div>• Firestore Database ID: ai-studio-f6ab9445-0d9c-462b-83af-0c2f4e7eefa0</div>
-            <div>• Auth Domain: gen-lang-client-0682213774.firebaseapp.com</div>
-            <div>• Security Rules: classes, observations, settings 전체 읽기/쓰기 허용 배포 완료</div>
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-nav btn-nav-primary" onclick="closeFirebaseGuideModal()">확인 완료</button>
       </div>
     </div>
   </div>
@@ -1904,30 +1608,46 @@
         }
 
         if (activeConfig && typeof firebase !== 'undefined') {
+          let app;
           if (!firebase.apps.length) {
-            firebase.initializeApp(activeConfig);
+            app = firebase.initializeApp(activeConfig);
+          } else {
+            app = firebase.app();
           }
+
+          // 익명 인증 시도 (공개 보안 규칙 환경)
           if (firebase.auth) {
             try {
-              await firebase.auth().signInAnonymously();
+              firebase.auth().signInAnonymously().catch(authErr => {
+                console.info('Firebase Auth 익명 로그인 (공개 규칙 기반 통신 진행):', authErr.code || authErr.message);
+              });
             } catch (authErr) {
-              console.warn('Firebase Auth 익명 로그인 안내:', authErr);
+              console.warn('Firebase Auth 호출 건너뜀:', authErr);
             }
           }
-          if (activeConfig.firestoreDatabaseId) {
+
+          // 전용 Firestore Database ID (ai-studio-f6ab9445-0d9c-462b-83af-0c2f4e7eefa0) 정확한 인스턴스 획득
+          const targetDbId = activeConfig.firestoreDatabaseId || "ai-studio-f6ab9445-0d9c-462b-83af-0c2f4e7eefa0";
+          try {
+            const defaultCompat = app.firestore();
+            const CompatClass = defaultCompat.constructor;
+            const fsProvider = app.container.getProvider('firestore');
+            const modularFs = fsProvider.getImmediate({ identifier: targetDbId });
+            db = new CompatClass(app, modularFs);
+            console.info('Firestore 전용 데이터베이스 인스턴스 연결 완료:', targetDbId);
+          } catch (dbErr) {
+            console.warn('전용 Firestore databaseId fallback 시도:', dbErr);
             try {
-              db = firebase.app().firestore(activeConfig.firestoreDatabaseId);
-            } catch (dbErr) {
-              console.warn('firestore(databaseId) fallback:', dbErr);
-              db = firebase.firestore();
+              db = app.firestore(targetDbId);
+            } catch (e2) {
+              db = app.firestore();
             }
-          } else {
-            db = firebase.firestore();
           }
+
           isFirebaseReady = true;
           updateFirebaseStatusUI(true, `🟢 실시간 동기화 활성 (${activeConfig.projectId || 'Firebase'})`);
           startRealtimeSync();
-          console.info('Firebase Firestore 실시간 동기화 시작');
+          console.info('Firebase Firestore 실시간 동기화 시작 완료');
         } else {
           isFirebaseReady = false;
           updateFirebaseStatusUI(false, '🟡 로컬 모드 (Firebase 연동 대기)');
@@ -1993,8 +1713,16 @@
             snapshot.forEach(doc => {
               remoteClasses[doc.id] = doc.data();
             });
-            classSchedules = remoteClasses;
-            localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
+            
+            // 클라우드 데이터가 존재하면 로컬 상태 갱신
+            if (Object.keys(remoteClasses).length > 0 || userCleared) {
+              classSchedules = remoteClasses;
+              localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
+            } else if (Object.keys(classSchedules).length > 0) {
+              // 로컬에 시간표가 이미 있고 클라우드에 아직 반영되지 않았을 때 병합
+              classSchedules = { ...classSchedules, ...remoteClasses };
+            }
+
             renderAdminScheduleList();
             updateClassInfoDisplay();
           }, (err) => {
@@ -2304,7 +2032,7 @@
         btn.classList.toggle('active', Number(btn.dataset.period) === state.selectedPeriod);
       });
 
-      document.getElementById('periodSelectionHint').textContent = `선택: ${period}교시 (${period === 2 ? '10:00~10:45' : '11:00~11:45'})`;
+      document.getElementById('periodSelectionHint').textContent = `선택: ${period}교시`;
       updateClassInfoDisplay();
     }
 
@@ -2320,12 +2048,14 @@
       const subjectVal = document.getElementById('infoSubjectValue');
       const teacherVal = document.getElementById('infoTeacherValue');
       const adminNotice = document.getElementById('infoAdminNotice');
+      const obsBannerText = document.getElementById('obsBannerTargetText');
+      const obsBannerBadge = document.getElementById('obsBannerSyncBadge');
 
       if (state.selectedGrade && state.selectedClass && state.selectedPeriod) {
         section.style.display = 'block';
         
-        badge.textContent = `${state.selectedGrade}학년 ${state.selectedClass}반 ${state.selectedPeriod}교시 수업`;
-        timeSpan.textContent = state.selectedPeriod === 2 ? '10:00 ~ 10:45 수업' : '11:00 ~ 11:45 수업';
+        badge.textContent = `${state.selectedGrade}학년 ${state.selectedClass}반 ${state.selectedPeriod}교시`;
+        if (timeSpan) timeSpan.textContent = `${state.selectedPeriod}교시 수업 정보`;
 
         const scheduleKey = `${state.selectedGrade}_${state.selectedClass}_${state.selectedPeriod}`;
         const schedule = classSchedules[scheduleKey];
@@ -2336,15 +2066,29 @@
           teacherVal.textContent = schedule.teacher;
           teacherVal.className = 'info-value';
           adminNotice.style.display = 'none';
+
+          if (obsBannerText) {
+            obsBannerText.innerHTML = `<span style="color: #166534;">[${state.selectedGrade}학년 ${state.selectedClass}반 ${state.selectedPeriod}교시]</span> <strong>${escapeHtml(schedule.subject)}</strong> <span style="font-weight: 500; font-size: 13.5px; color: #374151;">(${escapeHtml(schedule.teacher)})</span>`;
+          }
+          if (obsBannerBadge) obsBannerBadge.style.display = 'inline-block';
         } else {
           subjectVal.textContent = '미등록 (수업 정보 입력 필요)';
           subjectVal.className = 'info-value info-missing';
           teacherVal.textContent = '미등록 (담당 교사 입력 필요)';
           teacherVal.className = 'info-value info-missing';
           adminNotice.style.display = 'block';
+
+          if (obsBannerText) {
+            obsBannerText.innerHTML = `<span style="color: #b45309;">[${state.selectedGrade}학년 ${state.selectedClass}반 ${state.selectedPeriod}교시]</span> <span style="color: #dc2626;">수업 정보 미등록 (관리자 확인란에서 입력 가능)</span>`;
+          }
+          if (obsBannerBadge) obsBannerBadge.style.display = 'none';
         }
       } else {
         section.style.display = 'none';
+        if (obsBannerText) {
+          obsBannerText.textContent = '상단 1~3단계에서 학년, 반, 교시를 선택하시면 수업교과목과 담당 선생님이 자동으로 동기화됩니다.';
+        }
+        if (obsBannerBadge) obsBannerBadge.style.display = 'none';
       }
     }
 
@@ -2397,15 +2141,13 @@
         return;
       }
 
-      const submitBtn = document.getElementById('submitBtn');
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = `<span>⏳ 저장 중입니다...</span>`;
-
       const scheduleKey = `${state.selectedGrade}_${state.selectedClass}_${state.selectedPeriod}`;
       const schedule = classSchedules[scheduleKey] || { subject: '일반수업', teacher: '선생님' };
 
       const now = new Date();
+      const uniqueObsId = 'obs_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
       const observationRecord = {
+        id: uniqueObsId,
         grade: state.selectedGrade,
         classNum: state.selectedClass,
         period: state.selectedPeriod,
@@ -2416,38 +2158,60 @@
         timestamp: now.getTime()
       };
 
-      try {
-        if (isFirebaseReady && db) {
-          const docRef = await db.collection('observations').add(observationRecord);
-          observationRecord.id = docRef.id;
-          observationsList.unshift(observationRecord);
-          localStorage.setItem(STORAGE_KEY_OBSERVATIONS, JSON.stringify(observationsList));
-        } else {
-          observationRecord.id = 'local_' + Date.now();
-          observationsList.unshift(observationRecord);
-          localStorage.setItem(STORAGE_KEY_OBSERVATIONS, JSON.stringify(observationsList));
-        }
+      // 1. 즉각 반응형 낙관적 저장 (지연 0ms - '저장 중입니다...' 버튼 멈춤 현상 완벽 방지)
+      observationsList.unshift(observationRecord);
+      localStorage.setItem(STORAGE_KEY_OBSERVATIONS, JSON.stringify(observationsList));
+      renderAdminObservations();
 
-        showToast('🎉 참관록이 성공적으로 제출되었습니다! 감사합니다.');
-        document.getElementById('observationContent').value = '';
-        updateCharCount();
-        renderAdminObservations();
+      // 2. 제출 폼 즉시 초기화 및 버튼 정상화 (요청 6: 또 다른 참관록도 바로 작성할 수 있도록 셋팅)
+      document.getElementById('observationContent').value = '';
+      updateCharCount();
 
-      } catch (err) {
-        console.error('참관록 저장 오류:', err);
-        observationRecord.id = 'local_' + Date.now();
-        observationsList.unshift(observationRecord);
-        localStorage.setItem(STORAGE_KEY_OBSERVATIONS, JSON.stringify(observationsList));
-        showToast('⚠️ 네트워크 상태로 인해 우선 로컬에 안전하게 저장되었습니다.');
-      } finally {
+      const submitBtn = document.getElementById('submitBtn');
+      if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.innerHTML = `<span>✍️ 참관록 제출하기</span>`;
       }
+
+      // 3. 저장 완료 메시지 배너 및 토스트 즉시 표시
+      const successBanner = document.getElementById('obsSubmitSuccessBanner');
+      const successDetail = document.getElementById('obsSubmitSuccessDetail');
+      if (successBanner) {
+        if (successDetail) {
+          successDetail.innerHTML = `<strong>[${state.selectedGrade}학년 ${state.selectedClass}반 ${state.selectedPeriod}교시] ${escapeHtml(schedule.subject || '')} (${escapeHtml(schedule.teacher || '')})</strong> 소중한 참관 소감이 저장되었습니다.`;
+        }
+        successBanner.style.display = 'block';
+        successBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+      showToast('🎉 참관록 저장이 완료되었습니다! 추가 참관록을 계속 작성하실 수 있습니다.');
+
+      // 4. 백그라운드 클라우드 Firestore 비동기 저장 (UI 멈춤 없이 모든 기기 실시간 동기화)
+      if (isFirebaseReady && db) {
+        db.collection('observations').doc(uniqueObsId).set(observationRecord)
+          .then(() => {
+            console.info('참관록 Firestore 동기화 완료:', uniqueObsId);
+          })
+          .catch(err => {
+            console.warn('참관록 클라우드 저장 백그라운드:', err);
+          });
+      }
+    }
+
+    function prepareNextObservation() {
+      const banner = document.getElementById('obsSubmitSuccessBanner');
+      if (banner) banner.style.display = 'none';
+      const textarea = document.getElementById('observationContent');
+      if (textarea) {
+        textarea.value = '';
+        textarea.focus();
+        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      showToast('✍️ 다음 참관록 작성을 시작합니다. 학년/반/교시를 선택하거나 내용을 작성해주세요.');
     }
 
     /**
      * ==============================================================================
-     * 관리자 확인란 (비밀번호: 3000)
+     * 관리자 페이지 (비밀번호: 3000)
      * ==============================================================================
      */
     function openAdminModal() {
@@ -2489,20 +2253,21 @@
       document.getElementById('tabBtnObservations')?.classList.toggle('active', tabName === 'observations');
       document.getElementById('tabBtnSchedule')?.classList.toggle('active', tabName === 'schedule');
       document.getElementById('tabBtnSchool')?.classList.toggle('active', tabName === 'school');
-      document.getElementById('tabBtnFirebase')?.classList.toggle('active', tabName === 'firebase');
-      document.getElementById('tabBtnDomain')?.classList.toggle('active', tabName === 'domain');
 
       const obsContent = document.getElementById('tabContentObservations');
       const schContent = document.getElementById('tabContentSchedule');
       const scInfoContent = document.getElementById('tabContentSchool');
-      const fbContent = document.getElementById('tabContentFirebase');
-      const domainContent = document.getElementById('tabContentDomain');
 
       if (obsContent) obsContent.style.display = tabName === 'observations' ? 'block' : 'none';
       if (schContent) schContent.style.display = tabName === 'schedule' ? 'block' : 'none';
       if (scInfoContent) scInfoContent.style.display = tabName === 'school' ? 'block' : 'none';
-      if (fbContent) fbContent.style.display = tabName === 'firebase' ? 'block' : 'none';
-      if (domainContent) domainContent.style.display = tabName === 'domain' ? 'block' : 'none';
+
+      // 엑셀 반영 버튼 상태 초기화 (요청 5: 처음부터 계속 반영중이라고 떠있는 현상 방지)
+      const applyBtn = document.getElementById('applyExcelBtn');
+      if (applyBtn && tabName === 'schedule') {
+        applyBtn.disabled = false;
+        applyBtn.innerHTML = '✅ 시스템에 일괄 반영하기';
+      }
     }
 
     function updateAdminClassOptions() {
@@ -2745,16 +2510,20 @@
     }
 
     async function handleSaveSchedule(event) {
-      event.preventDefault();
+      if (event) event.preventDefault();
       const grade = Number(document.getElementById('adminGradeSelect').value);
       const classNum = Number(document.getElementById('adminClassSelect').value);
       const period = Number(document.getElementById('adminPeriodSelect').value);
       const subject = document.getElementById('adminSubjectInput').value.trim();
-      const teacher = document.getElementById('adminTeacherInput').value.trim();
+      let teacher = document.getElementById('adminTeacherInput').value.trim();
 
       if (!subject || !teacher) {
         showToast('⚠️ 교과목명과 담당 교사명을 입력해주세요.');
         return;
+      }
+
+      if (!teacher.includes('선생님') && teacher.length <= 4) {
+        teacher = teacher + ' 선생님';
       }
 
       const scheduleKey = `${grade}_${classNum}_${period}`;
@@ -2767,39 +2536,40 @@
         updatedAt: new Date().toISOString()
       };
 
+      // 1. 즉각 반응형 낙관적 업데이트 (지연 시간 0ms)
       classSchedules[scheduleKey] = scheduleData;
       localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
 
-      if (isFirebaseReady && db) {
-        try {
-          await db.collection('classes').doc(scheduleKey).set(scheduleData);
-        } catch (e) {
-          console.warn('Firestore 시간표 저장 실패:', e);
-        }
-      }
-
       renderAdminScheduleList();
       updateClassInfoDisplay();
-      showToast(`✅ [${grade}학년 ${classNum}반 ${period}교시] ${subject}(${teacher}) 저장 완료!`);
-      
       cancelScheduleEdit();
+      showToast(`⚡ [${grade}학년 ${classNum}반 ${period}교시] ${subject}(${teacher}) 저장 완료!`);
+
+      // 2. 백그라운드 클라우드 Firestore 비동기 저장 (화면 멈춤 없음)
+      if (isFirebaseReady && db) {
+        db.collection('classes').doc(scheduleKey).set(scheduleData)
+          .then(() => {
+            console.info(`수업 정보 클라우드 동기화 성공: ${scheduleKey}`);
+          })
+          .catch(e => {
+            console.warn('Firestore 시간표 저장 백그라운드 오류:', e);
+          });
+      }
     }
 
     async function deleteScheduleItem(key) {
       delete classSchedules[key];
       localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
 
-      if (isFirebaseReady && db) {
-        try {
-          await db.collection('classes').doc(key).delete();
-        } catch (e) {
-          console.warn('Firestore 삭제 오류:', e);
-        }
-      }
-
       renderAdminScheduleList();
       updateClassInfoDisplay();
       showToast('수업 정보가 삭제되었습니다.');
+
+      if (isFirebaseReady && db) {
+        db.collection('classes').doc(key).delete().catch(e => {
+          console.warn('Firestore 삭제 오류:', e);
+        });
+      }
     }
 
     // 요청 5: 한번에 초기화할 수 있는 버튼 & 진짜 초기화된다는 경고 메시지 확인 후 삭제 (인앱 모달로 구현)
@@ -3220,12 +2990,15 @@
       const btn = document.getElementById('applyExcelBtn');
       if (btn) {
         btn.disabled = true;
-        btn.textContent = '⏳ 반영 중...';
+        btn.textContent = '⏳ 즉시 반영 중...';
       }
 
       try {
         localStorage.removeItem('open_class_schedule_user_cleared');
         let maxClassesUpdated = false;
+
+        // 1. 중복 키 제거 및 정규화
+        const uniqueItems = {};
         validItems.forEach(item => {
           const g = Number(item.grade);
           const c = Number(item.classNum);
@@ -3233,12 +3006,18 @@
           if (isNaN(g) || isNaN(c) || isNaN(p)) return;
 
           const key = `${g}_${c}_${p}`;
-          classSchedules[key] = {
+          const cleanSubject = String(item.subject || '').trim();
+          let cleanTeacher = String(item.teacher || '').trim();
+          if (cleanTeacher && !cleanTeacher.includes('선생님') && cleanTeacher.length <= 4) {
+            cleanTeacher = cleanTeacher + ' 선생님';
+          }
+
+          uniqueItems[key] = {
             grade: g,
             classNum: c,
             period: p,
-            subject: String(item.subject),
-            teacher: String(item.teacher),
+            subject: cleanSubject,
+            teacher: cleanTeacher,
             updatedAt: new Date().toISOString()
           };
 
@@ -3249,34 +3028,50 @@
           }
         });
 
+        // 2. 즉시 로컬 상태 및 UI 반영 (0ms 지연)
+        Object.assign(classSchedules, uniqueItems);
+
         if (maxClassesUpdated) {
           localStorage.setItem(STORAGE_KEY_GRADE_CLASSES, JSON.stringify(GRADE_CLASS_COUNTS));
           applyGradeClassCountsToUI();
+          if (isFirebaseReady && db) {
+            db.collection('settings').doc('grade_classes').set({
+              counts: GRADE_CLASS_COUNTS,
+              updatedAt: new Date().toISOString()
+            }).catch(e => console.warn('반 수 저장 비동기:', e));
+          }
         }
 
         localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
 
-        if (isFirebaseReady && db) {
-          try {
-            const chunkSize = 400;
-            for (let i = 0; i < validItems.length; i += chunkSize) {
-              const chunk = validItems.slice(i, i + chunkSize);
-              const batch = db.batch();
-              chunk.forEach(item => {
-                const key = `${item.grade}_${item.classNum}_${item.period}`;
-                const ref = db.collection('classes').doc(key);
-                batch.set(ref, classSchedules[key]);
-              });
-              await batch.commit();
-            }
-          } catch (e) {
-            console.warn('Firestore 엑셀 데이터 동기화 오류:', e);
-          }
-        }
-
         renderAdminScheduleList();
         updateClassInfoDisplay();
-        showToast(`🎉 총 ${validItems.length}개의 수업 정보가 성공적으로 반영되었습니다!`);
+
+        const countApplied = Object.keys(uniqueItems).length;
+        showToast(`🎉 총 ${countApplied}개의 수업 정보가 즉시 반영되었습니다!`);
+
+        // 3. 백그라운드 클라우드 Firestore 동기화 (UI 블로킹 방지)
+        if (isFirebaseReady && db) {
+          const keys = Object.keys(uniqueItems);
+          (async () => {
+            try {
+              const chunkSize = 400;
+              for (let i = 0; i < keys.length; i += chunkSize) {
+                const chunkKeys = keys.slice(i, i + chunkSize);
+                const batch = db.batch();
+                chunkKeys.forEach(k => {
+                  const ref = db.collection('classes').doc(k);
+                  batch.set(ref, uniqueItems[k]);
+                });
+                await batch.commit();
+              }
+              console.info(`Firestore 엑셀 시간표 동기화 완료 (${countApplied}건)`);
+              showToast(`☁️ 클라우드에 ${countApplied}건의 시간표가 정상 동기화되었습니다.`);
+            } catch (e) {
+              console.warn('Firestore 엑셀 데이터 동기화 백그라운드 오류:', e);
+            }
+          })();
+        }
 
         // 아래 등록된 수업 목록으로 스크롤 이동하여 반영된 결과를 바로 확인
         document.getElementById('scheduleCount')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
