@@ -1,0 +1,6 @@
+{
+  "name": "학부모 공개수업 참관록",
+  "description": "학년, 반, 교시를 선택하여 수업 정보를 확인하고 학부모 공개수업 참관록을 작성 및 관리하는 웹 애플리케이션입니다.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

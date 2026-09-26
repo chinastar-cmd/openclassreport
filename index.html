@@ -1,0 +1,2809 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>학부모 공개수업 참관록</title>
+  <meta name="description" content="학년, 반, 교시를 선택하여 수업 정보를 확인하고 학부모 공개수업 참관록을 작성 및 관리하는 웹 애플리케이션입니다.">
+  <meta property="og:title" content="학부모 공개수업 참관록">
+  <meta property="og:description" content="학년, 반, 교시를 선택하여 수업 정보를 확인하고 학부모 공개수업 참관록을 작성 및 관리하는 웹 애플리케이션입니다.">
+  <meta property="og:type" content="website">
+
+  <!-- Firebase JS SDK (CDN v10.12.0 호환 라이브러리) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- SheetJS (xlsx) CDN: 엑셀 파일(.xlsx, .xls) 일괄 업로드 및 템플릿 다운로드 -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- Google Fonts & Pretendard Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #2d6a4f;
+      --primary-hover: #1b4332;
+      --primary-light: #52b788;
+      --pastel-green-bg: #f2f7f4;
+      --pastel-card-bg: #ffffff;
+      --pastel-mint: #d8f3dc;
+      --pastel-mint-hover: #b7e4c7;
+      --pastel-tag: #e9f5ed;
+      --border-color: #d8e5dd;
+      --border-focus: #40916c;
+      --text-main: #1d2d24;
+      --text-muted: #597163;
+      --text-light: #829a8d;
+      --accent: #d97706;
+      --danger: #e63946;
+      --danger-hover: #c92a2a;
+      --shadow-sm: 0 2px 4px rgba(45, 106, 79, 0.05);
+      --shadow-md: 0 4px 12px rgba(45, 106, 79, 0.08);
+      --shadow-lg: 0 10px 25px rgba(45, 106, 79, 0.12);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-full: 9999px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+      background-color: var(--pastel-green-bg);
+      color: var(--text-main);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    /* Top Navigation Bar */
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      font-size: 13px;
+      font-weight: 600;
+      background-color: #e8f5e9;
+      color: #2e7d32;
+      border: 1px solid #c8e6c9;
+    }
+
+    .status-badge.local-mode {
+      background-color: #fff8e1;
+      color: #b78103;
+      border-color: #ffe082;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #2e7d32;
+      display: inline-block;
+    }
+
+    .status-badge.local-mode .status-dot {
+      background-color: #f59e0b;
+    }
+
+    .nav-actions {
+      display: flex;
+      gap: 8px;
+    }
+
+    .btn-nav {
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-color);
+      background-color: #ffffff;
+      color: var(--text-main);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+
+    .btn-nav:hover {
+      background-color: var(--pastel-mint);
+      border-color: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .btn-nav-primary {
+      background-color: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+    }
+
+    .btn-nav-primary:hover {
+      background-color: var(--primary-hover);
+      color: #ffffff;
+    }
+
+    .btn-nav-danger {
+      color: var(--danger);
+      border-color: #fca5a5;
+      background-color: #fff;
+    }
+
+    .btn-nav-danger:hover {
+      background-color: #fee2e2;
+      border-color: var(--danger);
+      color: var(--danger-hover);
+    }
+
+    /* Header Banner */
+    .app-header {
+      background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+      color: #ffffff;
+      padding: 28px 24px;
+      border-radius: var(--radius-lg);
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-md);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .app-header::after {
+      content: '🏫';
+      position: absolute;
+      right: 15px;
+      bottom: -15px;
+      font-size: 90px;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    .school-tag {
+      display: inline-block;
+      background-color: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      margin-bottom: 10px;
+      backdrop-filter: blur(4px);
+    }
+
+    .app-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.5px;
+    }
+
+    .app-subtitle {
+      font-size: 14px;
+      opacity: 0.92;
+      line-height: 1.5;
+    }
+
+    /* Cards */
+    .card {
+      background-color: var(--pastel-card-bg);
+      border-radius: var(--radius-lg);
+      padding: 22px 20px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--border-color);
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      border-color: #b7e4c7;
+      box-shadow: var(--shadow-md);
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .step-number {
+      width: 24px;
+      height: 24px;
+      background-color: var(--pastel-mint);
+      color: var(--primary);
+      font-size: 13px;
+      font-weight: 700;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-hint {
+      font-size: 13px;
+      color: var(--text-muted);
+      font-weight: 400;
+      margin-left: auto;
+    }
+
+    /* Button Grids */
+    .btn-group {
+      display: grid;
+      gap: 10px;
+    }
+
+    .grade-group {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .period-group {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .class-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    @media (min-width: 600px) {
+      .class-grid {
+        grid-template-columns: repeat(5, 1fr);
+      }
+    }
+
+    /* Selectable Buttons */
+    .select-btn {
+      background-color: #ffffff;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 14px 10px;
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.15s ease-in-out;
+      user-select: none;
+    }
+
+    .select-btn:hover {
+      background-color: #f7faf8;
+      border-color: var(--primary-light);
+      transform: translateY(-1px);
+    }
+
+    .select-btn:active {
+      transform: translateY(0);
+    }
+
+    .select-btn.active {
+      background-color: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(45, 106, 79, 0.25);
+    }
+
+    .select-btn.active .btn-sub {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .btn-sub {
+      font-size: 11px;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    .class-btn {
+      padding: 12px 6px;
+      font-size: 15px;
+      border-radius: var(--radius-sm);
+    }
+
+    .placeholder-box {
+      background-color: #f8faf8;
+      border: 1.5px dashed var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    /* Class Info Display Box */
+    .info-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #e8f5e9 100%);
+      border: 1.5px solid #a7f3d0;
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    .info-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      border-bottom: 1px solid #c8e6c9;
+      padding-bottom: 10px;
+    }
+
+    .info-badge {
+      background-color: var(--primary);
+      color: #ffffff;
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+    }
+
+    .info-time {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    @media (max-width: 500px) {
+      .info-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+    }
+
+    .info-item {
+      background-color: rgba(255, 255, 255, 0.85);
+      padding: 12px 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid #d1fae5;
+    }
+
+    .info-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .info-value {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--primary-hover);
+    }
+
+    .info-missing {
+      color: #d97706;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    /* Observation Form */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .required-star {
+      color: var(--danger);
+      margin-left: 2px;
+    }
+
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      font-family: inherit;
+      color: var(--text-main);
+      background-color: #ffffff;
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.12);
+    }
+
+    .form-textarea {
+      min-height: 160px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    /* Quick Keyword Tags */
+    .quick-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .tag-title {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+
+    .quick-tag-btn {
+      font-size: 12px;
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      background-color: var(--pastel-tag);
+      color: var(--primary);
+      border: 1px solid #c8e6c9;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .quick-tag-btn:hover {
+      background-color: var(--pastel-mint);
+      border-color: var(--primary-light);
+    }
+
+    .textarea-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Submit Button */
+    .btn-submit {
+      width: 100%;
+      background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 16px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 14px rgba(45, 106, 79, 0.25);
+      transition: all 0.2s ease;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(45, 106, 79, 0.3);
+    }
+
+    .btn-submit:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-submit:disabled {
+      background: #c2d5cb;
+      color: #ffffff;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    /* Modal Styling */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(15, 30, 22, 0.55);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.25s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-box {
+      background-color: #ffffff;
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 760px;
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: var(--shadow-lg);
+      transform: translateY(15px);
+      transition: transform 0.25s ease;
+      overflow: hidden;
+    }
+
+    .modal-overlay.active .modal-box {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #f9fbf9;
+    }
+
+    .modal-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 22px;
+      cursor: pointer;
+      color: var(--text-muted);
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .modal-close:hover {
+      background-color: #e8ede9;
+      color: var(--text-main);
+    }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border-color);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background-color: #fbfdfb;
+    }
+
+    /* Admin Tabs */
+    .tabs-nav {
+      display: flex;
+      gap: 6px;
+      border-bottom: 2px solid var(--pastel-mint);
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      padding: 10px 14px;
+      border: none;
+      background: none;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      margin-bottom: -2px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .tab-btn.active {
+      color: var(--primary);
+      border-bottom-color: var(--primary);
+    }
+
+    /* Admin Table */
+    .admin-table-container {
+      max-height: 360px;
+      overflow-y: auto;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      margin-top: 14px;
+    }
+
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    .data-table th {
+      background-color: #eef6f1;
+      padding: 10px 12px;
+      font-weight: 700;
+      color: var(--primary);
+      position: sticky;
+      top: 0;
+      border-bottom: 1px solid var(--border-color);
+      z-index: 2;
+    }
+
+    .data-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #edf2ee;
+    }
+
+    .data-table tr:hover {
+      background-color: #f7faf8;
+    }
+
+    /* Code Block in Firebase Guide */
+    .code-box {
+      background-color: #1e293b;
+      color: #e2e8f0;
+      padding: 14px;
+      border-radius: var(--radius-sm);
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      overflow-x: auto;
+      margin: 10px 0;
+      position: relative;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      padding: 4px 8px;
+      font-size: 11px;
+      border-radius: 4px;
+      background: #334155;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+
+    .copy-btn:hover {
+      background: #475569;
+    }
+
+    /* Guide Steps */
+    .guide-step {
+      margin-bottom: 20px;
+      background-color: #fbfdfb;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      padding: 16px;
+    }
+
+    .guide-step-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .guide-step p, .guide-step li {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      line-height: 1.6;
+    }
+
+    .guide-step ul, .guide-step ol {
+      padding-left: 20px;
+    }
+
+    /* Toast Notification */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      background-color: #1b382b;
+      color: #ffffff;
+      padding: 12px 20px;
+      border-radius: var(--radius-full);
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: var(--shadow-lg);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      animation: toastIn 0.25s ease forwards;
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Excel Drag & Drop zone */
+    .drop-zone {
+      border: 2px dashed #a7f3d0;
+      background-color: #f0fdf4;
+      border-radius: var(--radius-md);
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .drop-zone:hover, .drop-zone.dragover {
+      background-color: #dcfce7;
+      border-color: var(--primary);
+    }
+
+    /* Print Styles */
+    @media print {
+      body {
+        background-color: #fff;
+      }
+      .top-nav, .btn-group, .btn-submit, .quick-tags, .modal-close, .modal-footer, .nav-actions, #classButtonsContainer {
+        display: none !important;
+      }
+      .container {
+        max-width: 100%;
+        padding: 0;
+      }
+      .card {
+        box-shadow: none;
+        border: 1px solid #ccc;
+        break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Top Navigation Bar -->
+    <header class="top-nav">
+      <div id="firebaseStatusBadge" class="status-badge local-mode" title="클릭하여 Firebase 연결 상태 확인">
+        <span class="status-dot"></span>
+        <span id="firebaseStatusText">로컬 모드 (Firebase 연동 대기)</span>
+      </div>
+      <div class="nav-actions">
+        <button type="button" class="btn-nav" onclick="openFirebaseGuideModal()">
+          🔥 Firebase 설정 가이드
+        </button>
+        <button type="button" class="btn-nav btn-nav-primary" onclick="openAdminModal()">
+          ⚙️ 관리자 확인란
+        </button>
+      </div>
+    </header>
+
+    <!-- App Title Banner -->
+    <section class="app-header">
+      <span class="school-tag" id="headerSchoolTag">🏫 행복중학교 학부모 공개수업의 날</span>
+      <h1 class="app-title">학부모 공개수업 참관록</h1>
+      <p class="app-subtitle">
+        자녀의 학년, 반, 교시를 선택하시면 수업 교과목과 담당 선생님 성함이 표시됩니다.<br>
+        수업을 참관하신 후 따뜻한 격려와 소중한 의견을 작성해주세요.
+      </p>
+    </section>
+
+    <!-- Main Form Section -->
+    <main>
+      <!-- 기능 1: 학년 선택 -->
+      <section class="card">
+        <div class="card-title">
+          <span class="step-number">1</span>
+          <span>학년 선택</span>
+          <span class="step-hint" id="gradeSelectionHint">1개 학년을 선택해주세요</span>
+        </div>
+        <div class="btn-group grade-group">
+          <button type="button" class="select-btn" data-grade="1" onclick="selectGrade(1)">
+            <span>1학년</span>
+            <span class="btn-sub" id="grade1SubText">1반 ~ 8반</span>
+          </button>
+          <button type="button" class="select-btn" data-grade="2" onclick="selectGrade(2)">
+            <span>2학년</span>
+            <span class="btn-sub" id="grade2SubText">1반 ~ 10반</span>
+          </button>
+          <button type="button" class="select-btn" data-grade="3" onclick="selectGrade(3)">
+            <span>3학년</span>
+            <span class="btn-sub" id="grade3SubText">1반 ~ 9반</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 기능 2: 반 선택 -->
+      <section class="card">
+        <div class="card-title">
+          <span class="step-number">2</span>
+          <span>반 선택</span>
+          <span class="step-hint" id="classSelectionHint">학년 선택 후 활성화됩니다</span>
+        </div>
+        <div id="classButtonsContainer">
+          <div class="placeholder-box">
+            👆 먼저 1단계에서 학년을 선택하시면 반 선택 버튼이 나타납니다.
+          </div>
+        </div>
+      </section>
+
+      <!-- 기능 3: 교시 선택 -->
+      <section class="card">
+        <div class="card-title">
+          <span class="step-number">3</span>
+          <span>교시 선택</span>
+          <span class="step-hint" id="periodSelectionHint">참관하실 교시를 선택해주세요</span>
+        </div>
+        <div class="btn-group period-group">
+          <button type="button" class="select-btn" data-period="2" onclick="selectPeriod(2)">
+            <span>2교시</span>
+            <span class="btn-sub">10:00 ~ 10:45</span>
+          </button>
+          <button type="button" class="select-btn" data-period="3" onclick="selectPeriod(3)">
+            <span>3교시</span>
+            <span class="btn-sub">11:00 ~ 11:45</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 기능 5: 선택한 학년, 반, 교시에 따른 수업 정보 (교과목 & 교사명) 표시 -->
+      <section id="classInfoSection" class="card" style="display: none;">
+        <div class="info-card">
+          <div class="info-header">
+            <span id="infoSelectionBadge" class="info-badge">1학년 1반 2교시</span>
+            <span id="infoPeriodTime" class="info-time">10:00 ~ 10:45 수업</span>
+          </div>
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">📖 수업 교과목</div>
+              <div id="infoSubjectValue" class="info-value">국어</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">👩‍🏫 담당 교사명</div>
+              <div id="infoTeacherValue" class="info-value">김하늘 선생님</div>
+            </div>
+          </div>
+          <div id="infoAdminNotice" style="display: none; margin-top: 10px; font-size: 12px; color: #b45309;">
+            * 아직 등록된 수업 정보가 없습니다. 관리자 확인란에서 교과목과 담당교사를 입력할 수 있습니다.
+          </div>
+        </div>
+      </section>
+
+      <!-- 기능 6: 참관록 작성하기 (익명 작성을 위해 학부모 성명 및 자녀 이름 삭제됨) -->
+      <section class="card" id="observationFormCard">
+        <div class="card-title">
+          <span class="step-number">4</span>
+          <span>참관록 작성하기</span>
+          <span class="step-hint">해당 교시의 참관 소감을 작성해주세요</span>
+        </div>
+
+        <form id="observationForm" onsubmit="handleObservationSubmit(event)">
+          <!-- 빠른 입력 도우미 키워드 태그 -->
+          <div class="form-group">
+            <div class="tag-title">💡 빠른 문구 추가 (클릭하면 내용에 자동 입력됩니다)</div>
+            <div class="quick-tags">
+              <button type="button" class="quick-tag-btn" onclick="appendTagText('학생들의 참여도가 높고 활기찬 수업이었습니다.')">
+                + 학생 참여도 우수
+              </button>
+              <button type="button" class="quick-tag-btn" onclick="appendTagText('선생님의 친절하고 명쾌한 설명이 인상 깊었습니다.')">
+                + 친절하고 명쾌한 지도
+              </button>
+              <button type="button" class="quick-tag-btn" onclick="appendTagText('모둠별 협동 활동과 자유로운 질문 분위기가 좋았습니다.')">
+                + 모둠 협동 활동
+              </button>
+              <button type="button" class="quick-tag-btn" onclick="appendTagText('학생 한 명 한 명 눈높이에 맞춘 지도가 돋보였습니다.')">
+                + 눈높이 개별 지도
+              </button>
+              <button type="button" class="quick-tag-btn" onclick="appendTagText('스스로 생각하고 문제를 해결하는 자기주도성이 돋보였습니다.')">
+                + 자기주도적 배움
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="observationContent">
+              참관 소감 및 의견 <span class="required-star">*</span>
+            </label>
+            <textarea 
+              id="observationContent" 
+              class="form-textarea" 
+              placeholder="수업을 참관하시며 느끼신 점, 학생들의 참여 태도와 배움의 과정, 선생님께 전하는 격려의 말씀을 자유롭게 작성해주세요."
+              maxlength="1500"
+              required
+              oninput="updateCharCount()"
+            ></textarea>
+            <div class="textarea-footer">
+              <span>수업 참관 소감은 교원능력개발 및 학교 발전을 위한 소중한 자료로 활용됩니다.</span>
+              <span id="charCount">0 / 1500자</span>
+            </div>
+          </div>
+
+          <button type="submit" id="submitBtn" class="btn-submit">
+            <span>✍️ 참관록 제출하기</span>
+          </button>
+        </form>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer style="text-align: center; font-size: 13px; color: var(--text-light); margin-top: 20px;">
+      <p id="footerSchoolText">행복중학교 학부모 공개수업 참관록 시스템 &copy; 2026. 본 시스템은 모바일 및 데스크톱 브라우저에 최적화되어 있습니다.</p>
+    </footer>
+  </div>
+
+  <!-- 모달 1: 관리자 확인란 (수업 정보/엑셀/참관록/학교명/Firebase 관리) -->
+  <div id="adminModal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ 관리자 확인란</h3>
+        <button type="button" class="modal-close" onclick="closeAdminModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <!-- 관리자 비밀번호 확인 영역 (비밀번호: 3000) -->
+        <div id="adminAuthSection">
+          <div style="text-align: center; padding: 24px 10px;">
+            <div style="font-size: 42px; margin-bottom: 12px;">🔒</div>
+            <h4 style="font-size: 17px; margin-bottom: 6px;">관리자 인증이 필요합니다</h4>
+            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;">
+              수업 시간표 및 참관록 데이터 관리를 위해 관리자 비밀번호를 입력해주세요.
+            </p>
+            <div style="max-width: 280px; margin: 0 auto; display: flex; gap: 8px;">
+              <input type="password" id="adminPasswordInput" class="form-input" placeholder="비밀번호 입력" style="text-align: center;" onkeydown="if(event.key==='Enter') checkAdminPassword()">
+              <button type="button" class="btn-nav btn-nav-primary" onclick="checkAdminPassword()">확인</button>
+            </div>
+            <div id="adminAuthError" style="color: var(--danger); font-size: 13px; margin-top: 10px; display: none;">
+              ⚠️ 비밀번호가 일치하지 않습니다. 다시 입력해주세요.
+            </div>
+          </div>
+        </div>
+
+        <!-- 관리자 패널 메인 영역 (인증 완료 시) -->
+        <div id="adminContentSection" style="display: none;">
+          <!-- 탭 네비게이션: 수업 정보와 엑셀 일괄 등록을 한 페이지로 통합 -->
+          <div class="tabs-nav">
+            <button type="button" class="tab-btn active" id="tabBtnObservations" onclick="switchAdminTab('observations')">
+              📋 참관록 모아보기
+            </button>
+            <button type="button" class="tab-btn" id="tabBtnSchedule" onclick="switchAdminTab('schedule')">
+              📖 수업 정보 & 엑셀 일괄 등록
+            </button>
+            <button type="button" class="tab-btn" id="tabBtnSchool" onclick="switchAdminTab('school')">
+              🏫 학교명 관리
+            </button>
+            <button type="button" class="tab-btn" id="tabBtnFirebase" onclick="switchAdminTab('firebase')">
+              🔥 Firebase 설정
+            </button>
+          </div>
+
+          <!-- 탭 1: 참관록 모아보기 및 관리 -->
+          <div id="tabContentObservations">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
+              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span style="font-size: 14px; font-weight: 700; color: var(--text-main);">
+                  총 접수된 참관록: <strong id="adminObsCount" style="color: var(--primary);">0</strong>건
+                </span>
+                <select id="obsFilterGrade" class="form-select" style="width: auto; padding: 6px 10px; font-size: 12px;" onchange="renderAdminObservations()">
+                  <option value="all">전체 학년</option>
+                  <option value="1">1학년</option>
+                  <option value="2">2학년</option>
+                  <option value="3">3학년</option>
+                </select>
+                <select id="obsFilterPeriod" class="form-select" style="width: auto; padding: 6px 10px; font-size: 12px;" onchange="renderAdminObservations()">
+                  <option value="all">전체 교시</option>
+                  <option value="2">2교시</option>
+                  <option value="3">3교시</option>
+                </select>
+              </div>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="btn-nav" onclick="downloadObservationsCSV()">
+                  📥 엑셀(CSV) 다운로드
+                </button>
+                <button type="button" class="btn-nav" onclick="window.print()">
+                  🖨️ 인쇄
+                </button>
+                <button type="button" class="btn-nav btn-nav-danger" onclick="clearAllObservations()">
+                  🗑️ 참관록 전체 삭제
+                </button>
+              </div>
+            </div>
+
+            <div class="admin-table-container" style="max-height: 400px;">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th style="width: 130px;">접수일시</th>
+                    <th style="width: 110px;">학년/반/교시</th>
+                    <th style="width: 140px;">과목 및 교사</th>
+                    <th>참관 소감 및 의견</th>
+                    <th style="width: 60px;">삭제</th>
+                  </tr>
+                </thead>
+                <tbody id="adminObsTableBody">
+                  <!-- JS로 채워짐 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 탭 2: 수업 정보 관리 & 엑셀 일괄 등록 (한 페이지로 통합 + 학년별 반 수 설정) -->
+          <div id="tabContentSchedule" style="display: none;">
+            
+            <!-- 1. 학년별 반 수 설정 (요청 4) -->
+            <div style="background-color: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+              <div style="font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between;">
+                <span>🏫 학년별 반(학급) 수 설정 및 관리</span>
+                <span style="font-size: 11px; font-weight: normal; color: var(--text-muted);">* 변경 시 메인화면과 등록창의 반 목록이 자동 갱신됩니다</span>
+              </div>
+              <form id="gradeClassCountsForm" onsubmit="handleSaveGradeClassCounts(event)" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; margin-top: 8px;">
+                <div style="flex: 1; min-width: 90px;">
+                  <label class="form-label" style="font-size: 12px; margin-bottom: 4px;" for="grade1ClassCountInput">1학년 반 수</label>
+                  <input type="number" id="grade1ClassCountInput" class="form-input" min="1" max="30" value="8" required style="padding: 8px 10px;">
+                </div>
+                <div style="flex: 1; min-width: 90px;">
+                  <label class="form-label" style="font-size: 12px; margin-bottom: 4px;" for="grade2ClassCountInput">2학년 반 수</label>
+                  <input type="number" id="grade2ClassCountInput" class="form-input" min="1" max="30" value="10" required style="padding: 8px 10px;">
+                </div>
+                <div style="flex: 1; min-width: 90px;">
+                  <label class="form-label" style="font-size: 12px; margin-bottom: 4px;" for="grade3ClassCountInput">3학년 반 수</label>
+                  <input type="number" id="grade3ClassCountInput" class="form-input" min="1" max="30" value="9" required style="padding: 8px 10px;">
+                </div>
+                <button type="submit" class="btn-nav btn-nav-primary" style="padding: 9px 16px; font-weight: 700;">
+                  💾 반 수 설정 저장
+                </button>
+              </form>
+            </div>
+
+            <!-- 2. 개별 수업 정보 등록 / 수정 폼 -->
+            <div style="background-color: #f7faf8; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <span id="scheduleFormModeTitle" style="font-size: 14px; font-weight: 700; color: var(--primary);">
+                  ➕ 학년·반·교시별 수업 정보 개별 등록 / 수정
+                </span>
+                <button type="button" id="scheduleCancelEditBtn" class="btn-nav" style="display: none; font-size: 12px;" onclick="cancelScheduleEdit()">
+                  ✕ 수정 취소
+                </button>
+              </div>
+
+              <form id="adminScheduleForm" onsubmit="handleSaveSchedule(event)">
+                <input type="hidden" id="editOriginalKey" value="">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px;">
+                  <div>
+                    <label class="form-label" style="font-size: 12px;">학년</label>
+                    <select id="adminGradeSelect" class="form-select" onchange="updateAdminClassOptions()">
+                      <option value="1">1학년</option>
+                      <option value="2">2학년</option>
+                      <option value="3">3학년</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 12px;">반</label>
+                    <select id="adminClassSelect" class="form-select"></select>
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 12px;">교시</label>
+                    <select id="adminPeriodSelect" class="form-select">
+                      <option value="2">2교시</option>
+                      <option value="3">3교시</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+                  <div>
+                    <label class="form-label" style="font-size: 12px;">교과목명 *</label>
+                    <input type="text" id="adminSubjectInput" class="form-input" placeholder="예: 국어, 영어, 수학, 과학" required>
+                  </div>
+                  <div>
+                    <label class="form-label" style="font-size: 12px;">담당 교사명 *</label>
+                    <input type="text" id="adminTeacherInput" class="form-input" placeholder="예: 김하늘 선생님" required>
+                  </div>
+                </div>
+
+                <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                  <button type="submit" id="saveScheduleBtn" class="btn-nav btn-nav-primary">
+                    💾 수업 정보 저장하기
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- 3. 엑셀 파일로 일괄 등록 및 수정 (요청 3: 한 페이지로 통합) -->
+            <div style="background-color: #fcfdfc; border: 1.5px dashed #86efac; border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                <div style="font-size: 14px; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 6px;">
+                  <span>📊 엑셀 파일(.xlsx, .xls) 일괄 등록 및 수정</span>
+                </div>
+                <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <button type="button" class="btn-nav" style="font-size: 12px;" onclick="downloadExcelTemplate()">
+                    📥 엑셀 양식 다운로드
+                  </button>
+                  <button type="button" class="btn-nav" style="font-size: 12px;" onclick="exportCurrentScheduleExcel()">
+                    📤 현재 시간표 엑셀 다운
+                  </button>
+                </div>
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 10px;">
+                엑셀 파일(컬럼: <code>학년</code>, <code>반</code>, <code>교시</code>, <code>교과목</code>, <code>담당교사</code>)을 올려 한 번에 등록하거나 수정할 수 있습니다.
+              </p>
+
+              <!-- 드롭 존 -->
+              <div class="drop-zone" id="excelDropZone" onclick="document.getElementById('excelFileInput').click()" style="padding: 18px 12px;">
+                <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleExcelFileUpload(event)">
+                <div style="font-size: 30px; margin-bottom: 4px;">📑</div>
+                <div style="font-size: 14px; font-weight: 700; color: var(--primary); margin-bottom: 2px;">
+                  작성한 엑셀 파일 클릭하여 선택하거나 여기로 드래그하세요
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted);">
+                  (숫자 '1' 또는 '1학년', '2교시' 등 다양한 표기 자동 인식)
+                </div>
+              </div>
+
+              <!-- 엑셀 미리보기 및 [시스템에 일괄 반영하기] 버튼 -->
+              <div id="excelPreviewSection" style="display: none; margin-top: 14px; border-top: 1px solid var(--border-color); padding-top: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                  <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">
+                    엑셀 인식 결과: 총 <strong id="excelReadCount" style="color: var(--primary);">0</strong>건 (반영 가능: <strong id="excelValidCount" style="color: #2e7d32;">0</strong>건)
+                  </span>
+                  <button type="button" id="applyExcelBtn" class="btn-nav btn-nav-primary" style="padding: 8px 16px; font-weight: 700;" onclick="applyExcelDataToSystem()">
+                    ✅ 시스템에 일괄 반영하기
+                  </button>
+                </div>
+                <div class="admin-table-container" style="max-height: 220px;">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>학년</th>
+                        <th>반</th>
+                        <th>교시</th>
+                        <th>교과목</th>
+                        <th>담당교사</th>
+                        <th>검증 결과</th>
+                      </tr>
+                    </thead>
+                    <tbody id="excelPreviewTableBody"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. 등록된 전체 수업 정보 목록 및 액션 바 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 700; color: var(--text-main);">
+                등록된 수업 정보 목록 (<span id="scheduleCount">0</span>개)
+              </span>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <button type="button" class="btn-nav" style="font-size: 12px; color: var(--primary);" onclick="seedDefaultSchedule()">
+                  ⚡ 표준 시간표 자동 채우기
+                </button>
+                <button type="button" class="btn-nav btn-nav-danger" style="font-size: 12px;" onclick="resetAllSchedulesWithWarning()">
+                  ⚠️ 전체 수업 정보 초기화
+                </button>
+              </div>
+            </div>
+
+            <div class="admin-table-container">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>학년/반</th>
+                    <th>교시</th>
+                    <th>교과목</th>
+                    <th>담당교사</th>
+                    <th style="width: 110px;">관리</th>
+                  </tr>
+                </thead>
+                <tbody id="scheduleTableBody">
+                  <!-- JS로 채워짐 -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 탭 4: 학교명 등록 및 관리 (요청 4) -->
+          <div id="tabContentSchool" style="display: none;">
+            <div class="guide-step">
+              <div class="guide-step-title">🏫 학교명 및 행사 타이틀 관리</div>
+              <p>
+                등록하신 학교명은 메인 화면 상단 태그와 하단 푸터에 즉시 반영되며, 브라우저 및 Firebase에 보존됩니다.
+              </p>
+              <form id="schoolNameForm" onsubmit="handleSaveSchoolName(event)" style="margin-top: 14px;">
+                <div class="form-group">
+                  <label class="form-label" for="schoolNameInput">학교명</label>
+                  <input type="text" id="schoolNameInput" class="form-input" placeholder="예: 서울행복중학교" maxlength="30" required>
+                </div>
+                <div class="form-group">
+                  <label class="form-label" for="eventTitleInput">행사명 (기본: 학부모 공개수업의 날)</label>
+                  <input type="text" id="eventTitleInput" class="form-input" placeholder="예: 2026학년도 학부모 공개수업의 날" maxlength="40">
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                  <button type="button" class="btn-nav" onclick="resetSchoolNameToDefault()">기본값으로 복원</button>
+                  <button type="submit" class="btn-nav btn-nav-primary">💾 학교명 저장하기</button>
+                </div>
+              </form>
+            </div>
+          </div>
+
+          <!-- 탭 5: Firebase 설정 상태 및 브라우저 Config 입력 (요청 7) -->
+          <div id="tabContentFirebase" style="display: none;">
+            <div class="guide-step">
+              <div class="guide-step-title">🔥 현재 Firebase 설정 상태</div>
+              <div id="firebaseDetailStatus" style="font-size: 14px; margin-bottom: 8px;"></div>
+              <p>
+                Firebase 프로젝트 설정값(firebaseConfig)을 연동하시면 클라우드 Firestore에 데이터가 영구 보존됩니다.<br>
+                연동 전이어도 브라우저 로컬 저장소를 통해 엑셀 업로드, 시간표 수정, 참관록 작성이 100% 정상 작동합니다.
+              </p>
+            </div>
+
+            <div style="background-color: #f7faf8; padding: 14px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+              <div style="font-size: 13px; font-weight: 700; margin-bottom: 6px;">
+                💡 브라우저에서 바로 Firebase Config JSON 적용하기
+              </div>
+              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+                HTML 소스코드를 직접 수정하지 않고도 여기서 바로 본인의 Firebase Config 객체를 붙여넣어 연결할 수 있습니다.
+              </p>
+              <textarea id="quickConfigInput" class="form-textarea" style="min-height: 90px; font-family: monospace; font-size: 12px;" placeholder='{ "apiKey": "AIza...", "projectId": "my-school-app", ... }'></textarea>
+              <div style="margin-top: 8px; display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn-nav" onclick="resetToDefaultFirebaseConfig()">기본값 초기화</button>
+                <button type="button" class="btn-nav btn-nav-primary" onclick="applyCustomFirebaseConfig()">설정 적용하기</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-nav" onclick="closeAdminModal()">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 모달 2: Firebase 설정 상세 가이드 -->
+  <div id="firebaseGuideModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3 class="modal-title">🔥 Firebase (Firestore) 연동 가이드</h3>
+        <button type="button" class="modal-close" onclick="closeFirebaseGuideModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">
+          이 웹앱은 Firebase Firestore와 손쉽게 연동할 수 있도록 Firebase JS SDK(CDN 호환)로 제작되었습니다. 아래 3단계를 따라 설정하시면 3분 안에 클라우드 데이터베이스와 연결됩니다.
+        </p>
+
+        <!-- 단계 1 -->
+        <div class="guide-step">
+          <div class="guide-step-title">(1) Firebase 콘솔에서 새 프로젝트 생성하는 방법</div>
+          <ol>
+            <li>웹 브라우저에서 <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 600;">Firebase 콘솔(console.firebase.google.com)</a>에 접속하여 Google 계정으로 로그인합니다.</li>
+            <li><strong>[+ 프로젝트 추가]</strong> 버튼을 누릅니다.</li>
+            <li>프로젝트 이름(예: <code>open-class-2026</code> 또는 학교명)을 입력하고 <strong>[계속]</strong>을 누릅니다.</li>
+            <li>Google 애널리틱스 설정은 선택사항(체크 해제 권장)이며 <strong>[프로젝트 만들기]</strong>를 클릭하면 약 10초 후 완료됩니다.</li>
+          </ol>
+        </div>
+
+        <!-- 단계 2 -->
+        <div class="guide-step">
+          <div class="guide-step-title">(2) Firestore Database를 테스트 모드로 생성하고 컬렉션 구조 잡기</div>
+          <ol>
+            <li>콘솔 좌측 메뉴에서 <strong>[빌드] &gt; [Firestore Database]</strong>를 선택하고 <strong>[데이터베이스 만들기]</strong>를 누릅니다.</li>
+            <li>데이터베이스 위치를 선택(예: <code>asia-northeast3 (서울)</code> 권장)하고 <strong>[다음]</strong>을 누릅니다.</li>
+            <li>보안 규칙 단계에서 <strong>[테스트 모드에서 시작]</strong>을 선택하고 <strong>[사용 설정]</strong>을 클릭합니다.</li>
+            <li><strong>컬렉션 구조 안내:</strong>
+              <div style="background-color: #f1f8f3; padding: 10px; border-radius: 6px; margin: 8px 0; font-size: 12px;">
+                • <code>classes</code> (수업 시간표 컬렉션): 문서 ID를 <code>{학년}_{반}_{교시}</code> 형식(예: <code>1_2_2</code>)으로 과목(<code>subject</code>)과 교사(<code>teacher</code>)를 보관합니다.<br>
+                • <code>observations</code> (학부모 참관록 컬렉션): 학년(<code>grade</code>), 반(<code>classNum</code>), 교시(<code>period</code>), 과목(<code>subject</code>), 교사(<code>teacher</code>), 소감(<code>content</code>), 작성일시(<code>createdAt</code>)가 자동 저장됩니다.<br>
+                • <code>settings</code> (학교 정보 컬렉션): 학교명(<code>schoolName</code>), 행사명(<code>eventTitle</code>)을 저장합니다.<br>
+                <em>* 컬렉션은 앱에서 첫 데이터 저장 시 Firestore가 자동으로 생성하므로 직접 수동으로 만드실 필요가 없습니다!</em>
+              </div>
+            </li>
+          </ol>
+        </div>
+
+        <!-- 단계 3 -->
+        <div class="guide-step">
+          <div class="guide-step-title">(3) 웹 앱 추가로 firebaseConfig 얻는 방법과 코드 붙여넣기</div>
+          <ol>
+            <li>Firebase 콘솔 홈(프로젝트 개요)으로 이동하여 중앙의 <strong>웹 아이콘 ( &lt;/&gt; )</strong>을 클릭합니다.</li>
+            <li>앱 닉네임(예: <code>학부모참관록</code>)을 입력하고 <strong>[앱 등록]</strong>을 클릭합니다.</li>
+            <li>화면에 표시되는 <code>firebaseConfig</code> 객체 코드를 복사합니다:
+              <div class="code-box">
+                <button type="button" class="copy-btn" onclick="copyTemplateCode()">복사</button>
+<pre id="templateCodeBlock">const firebaseConfig = {
+  apiKey: "여기에_API_KEY",
+  authDomain: "여기에_AUTH_DOMAIN",
+  projectId: "여기에_PROJECT_ID",
+  storageBucket: "여기에_STORAGE_BUCKET",
+  messagingSenderId: "여기에_SENDER_ID",
+  appId: "여기에_APP_ID"
+};</pre>
+              </div>
+            </li>
+            <li><strong>코드 붙여넣을 위치:</strong>
+              <p>
+                이 파일(<code>index.html</code>)의 <code>&lt;script&gt;</code> 태그 최상단에 있는 <code>const firebaseConfig = { ... };</code> 부분의 큰따옴표 안에 복사한 실제 값들을 그대로 바꿔 넣으시면 됩니다.
+                또는 화면 상단 [⚙️ 관리자 확인란] &gt; [Firebase 설정] 탭의 입력창에 붙여넣어 즉시 적용하실 수도 있습니다!
+              </p>
+            </li>
+          </ol>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-nav btn-nav-primary" onclick="closeFirebaseGuideModal()">확인 완료</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 컨테이너 -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- JavaScript 애플리케이션 로직 (순수 Vanilla JS + Firebase CDN + SheetJS) -->
+  <script>
+    /**
+     * ==============================================================================
+     * [Firebase 설정 객체 자리표시자]
+     * Firebase 콘솔에서 발급받은 실제 프로젝트 설정값으로 아래 값을 교체해주세요.
+     * ==============================================================================
+     */
+    const firebaseConfig = {
+      apiKey: "여기에_API_KEY",
+      authDomain: "여기에_AUTH_DOMAIN",
+      projectId: "여기에_PROJECT_ID",
+      storageBucket: "여기에_STORAGE_BUCKET",
+      messagingSenderId: "여기에_SENDER_ID",
+      appId: "여기에_APP_ID"
+    };
+
+    /**
+     * 관리자 비밀번호: 3000 (요청 2)
+     */
+    const ADMIN_PASSWORD = "3000";
+
+    /**
+     * 상태 및 전역 변수
+     */
+    let db = null;
+    let isFirebaseReady = false;
+
+    // 현재 사용자가 메인화면에서 선택한 상태
+    const state = {
+      selectedGrade: null,  // 1, 2, 3
+      selectedClass: null,  // 1 ~ max
+      selectedPeriod: null  // 2, 3
+    };
+
+    // 학교 기본 정보 상태
+    let schoolInfo = {
+      schoolName: "행복중학교",
+      eventTitle: "학부모 공개수업의 날"
+    };
+
+    // 학년별 반 개수 규칙 (기본값)
+    let GRADE_CLASS_COUNTS = {
+      1: 8,   // 1학년 8반까지
+      2: 10,  // 2학년 10반까지
+      3: 9    // 3학년 9반까지
+    };
+
+    // 로컬 스토리지 키
+    const STORAGE_KEY_CLASSES = 'open_class_schedule_data_v2';
+    const STORAGE_KEY_OBSERVATIONS = 'open_class_observations_data_v2';
+    const STORAGE_KEY_SCHOOL = 'open_class_school_info_v2';
+    const STORAGE_KEY_GRADE_CLASSES = 'open_class_grade_counts_v2';
+    const STORAGE_KEY_CUSTOM_CONFIG = 'open_class_custom_firebase_config_v2';
+
+    // 캐시
+    let classSchedules = {};
+    let observationsList = [];
+    let parsedExcelData = [];
+
+    /**
+     * ==============================================================================
+     * 초기화
+     * ==============================================================================
+     */
+    window.addEventListener('DOMContentLoaded', () => {
+      initFirebase();
+      loadSchoolInfo();
+      loadGradeClassCounts();
+      loadInitialData();
+      setupExcelDragAndDrop();
+    });
+
+    /**
+     * 학년별 반(학급) 수 관리 (요청 4)
+     */
+    function loadGradeClassCounts() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY_GRADE_CLASSES);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && typeof parsed === 'object') {
+            if (parsed[1]) GRADE_CLASS_COUNTS[1] = Number(parsed[1]);
+            if (parsed[2]) GRADE_CLASS_COUNTS[2] = Number(parsed[2]);
+            if (parsed[3]) GRADE_CLASS_COUNTS[3] = Number(parsed[3]);
+          }
+        }
+      } catch (e) {
+        console.warn('반 개수 로드 오류:', e);
+      }
+      applyGradeClassCountsToUI();
+    }
+
+    function applyGradeClassCountsToUI() {
+      // 1. 관리자 확인란 input 필드 갱신
+      const g1Input = document.getElementById('grade1ClassCountInput');
+      const g2Input = document.getElementById('grade2ClassCountInput');
+      const g3Input = document.getElementById('grade3ClassCountInput');
+      if (g1Input) g1Input.value = GRADE_CLASS_COUNTS[1];
+      if (g2Input) g2Input.value = GRADE_CLASS_COUNTS[2];
+      if (g3Input) g3Input.value = GRADE_CLASS_COUNTS[3];
+
+      // 2. 메인화면 학년 버튼 아래 서브텍스트 갱신
+      const g1Sub = document.getElementById('grade1SubText');
+      const g2Sub = document.getElementById('grade2SubText');
+      const g3Sub = document.getElementById('grade3SubText');
+      if (g1Sub) g1Sub.textContent = `1반 ~ ${GRADE_CLASS_COUNTS[1]}반`;
+      if (g2Sub) g2Sub.textContent = `1반 ~ ${GRADE_CLASS_COUNTS[2]}반`;
+      if (g3Sub) g3Sub.textContent = `1반 ~ ${GRADE_CLASS_COUNTS[3]}반`;
+
+      // 3. 관리자 수업정보 등록창의 반 선택 드롭다운 갱신
+      updateAdminClassOptions();
+
+      // 4. 메인화면에서 현재 선택된 학년의 반 버튼 목록 동적 갱신
+      if (state.selectedGrade) {
+        renderClassButtons();
+      }
+    }
+
+    async function handleSaveGradeClassCounts(event) {
+      if (event) event.preventDefault();
+      const g1 = Math.max(1, Math.min(30, Number(document.getElementById('grade1ClassCountInput').value) || 8));
+      const g2 = Math.max(1, Math.min(30, Number(document.getElementById('grade2ClassCountInput').value) || 10));
+      const g3 = Math.max(1, Math.min(30, Number(document.getElementById('grade3ClassCountInput').value) || 9));
+
+      GRADE_CLASS_COUNTS[1] = g1;
+      GRADE_CLASS_COUNTS[2] = g2;
+      GRADE_CLASS_COUNTS[3] = g3;
+
+      localStorage.setItem(STORAGE_KEY_GRADE_CLASSES, JSON.stringify(GRADE_CLASS_COUNTS));
+
+      if (isFirebaseReady && db) {
+        try {
+          await db.collection('settings').doc('grade_classes').set({
+            counts: GRADE_CLASS_COUNTS,
+            updatedAt: new Date().toISOString()
+          });
+        } catch (e) {
+          console.warn('Firestore 반 수 저장 오류:', e);
+        }
+      }
+
+      applyGradeClassCountsToUI();
+      showToast(`✅ 학년별 반 수 설정이 저장되었습니다! (1학년:${g1}반, 2학년:${g2}반, 3학년:${g3}반)`);
+    }
+
+    function initFirebase() {
+      try {
+        let activeConfig = firebaseConfig;
+        const savedCustomConfig = localStorage.getItem(STORAGE_KEY_CUSTOM_CONFIG);
+        if (savedCustomConfig) {
+          try {
+            const parsed = JSON.parse(savedCustomConfig);
+            if (parsed && parsed.apiKey && parsed.apiKey !== "여기에_API_KEY") {
+              activeConfig = parsed;
+            }
+          } catch (e) {
+            console.warn('저장된 커스텀 config 오류:', e);
+          }
+        }
+
+        if (activeConfig && activeConfig.apiKey && activeConfig.apiKey !== "여기에_API_KEY" && typeof firebase !== 'undefined') {
+          if (!firebase.apps.length) {
+            firebase.initializeApp(activeConfig);
+          }
+          db = firebase.firestore();
+          isFirebaseReady = true;
+          updateFirebaseStatusUI(true, `Firebase 연동 완료 (${activeConfig.projectId || 'Connected'})`);
+        } else {
+          isFirebaseReady = false;
+          updateFirebaseStatusUI(false, '로컬 모드 (Firebase 연동 대기)');
+        }
+      } catch (err) {
+        console.error('Firebase 초기화 오류:', err);
+        isFirebaseReady = false;
+        updateFirebaseStatusUI(false, '로컬 모드 (초기화 오류)');
+      }
+    }
+
+    function updateFirebaseStatusUI(connected, message) {
+      const badge = document.getElementById('firebaseStatusBadge');
+      const text = document.getElementById('firebaseStatusText');
+      const detail = document.getElementById('firebaseDetailStatus');
+
+      if (badge && text) {
+        badge.className = connected ? 'status-badge' : 'status-badge local-mode';
+        text.textContent = message;
+      }
+
+      if (detail) {
+        detail.innerHTML = connected 
+          ? `<span style="color: #2e7d32; font-weight: 700;">🟢 정상 연결됨</span>: 클라우드 Firestore에 실시간 동기화 중입니다.`
+          : `<span style="color: #b78103; font-weight: 700;">🟡 연동 대기 중 (로컬 모드)</span>: 브라우저 로컬 저장소에 안전하게 저장 중입니다.`;
+      }
+    }
+
+    /**
+     * ==============================================================================
+     * 학교명 관리 (요청 4)
+     * ==============================================================================
+     */
+    function loadSchoolInfo() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY_SCHOOL);
+        if (stored) {
+          schoolInfo = JSON.parse(stored);
+        }
+      } catch (e) {
+        console.warn('학교 정보 읽기 실패:', e);
+      }
+      applySchoolInfoToUI();
+    }
+
+    function applySchoolInfoToUI() {
+      const headerTag = document.getElementById('headerSchoolTag');
+      const footerText = document.getElementById('footerSchoolText');
+      const schoolInput = document.getElementById('schoolNameInput');
+      const eventInput = document.getElementById('eventTitleInput');
+
+      const fullTag = `🏫 ${schoolInfo.schoolName} ${schoolInfo.eventTitle || '학부모 공개수업의 날'}`;
+      if (headerTag) headerTag.textContent = fullTag;
+      if (footerText) footerText.textContent = `${schoolInfo.schoolName} 학부모 공개수업 참관록 시스템 © 2026. 모바일 및 데스크톱 브라우저 최적화`;
+      
+      if (schoolInput) schoolInput.value = schoolInfo.schoolName;
+      if (eventInput) eventInput.value = schoolInfo.eventTitle || '학부모 공개수업의 날';
+    }
+
+    async function handleSaveSchoolName(event) {
+      event.preventDefault();
+      const schoolName = document.getElementById('schoolNameInput').value.trim();
+      const eventTitle = document.getElementById('eventTitleInput').value.trim() || '학부모 공개수업의 날';
+
+      if (!schoolName) {
+        showToast('⚠️ 학교명을 입력해주세요.');
+        return;
+      }
+
+      schoolInfo = { schoolName, eventTitle };
+      localStorage.setItem(STORAGE_KEY_SCHOOL, JSON.stringify(schoolInfo));
+
+      if (isFirebaseReady && db) {
+        try {
+          await db.collection('settings').doc('school').set(schoolInfo);
+        } catch (e) {
+          console.warn('Firestore 학교 정보 저장 실패:', e);
+        }
+      }
+
+      applySchoolInfoToUI();
+      showToast('✅ 학교명이 성공적으로 저장되고 화면에 적용되었습니다.');
+    }
+
+    function resetSchoolNameToDefault() {
+      schoolInfo = {
+        schoolName: "행복중학교",
+        eventTitle: "학부모 공개수업의 날"
+      };
+      localStorage.setItem(STORAGE_KEY_SCHOOL, JSON.stringify(schoolInfo));
+      applySchoolInfoToUI();
+      showToast('기본 학교명으로 복원되었습니다.');
+    }
+
+    /**
+     * ==============================================================================
+     * 데이터 로드 (Firestore <-> LocalStorage)
+     * ==============================================================================
+     */
+    async function loadInitialData() {
+      try {
+        const storedClasses = localStorage.getItem(STORAGE_KEY_CLASSES);
+        if (storedClasses) {
+          classSchedules = JSON.parse(storedClasses);
+        } else {
+          seedDefaultScheduleDataInternal();
+        }
+
+        const storedObs = localStorage.getItem(STORAGE_KEY_OBSERVATIONS);
+        if (storedObs) {
+          observationsList = JSON.parse(storedObs);
+        }
+      } catch (e) {
+        console.warn('로컬 데이터 읽기 오류:', e);
+      }
+
+      if (isFirebaseReady && db) {
+        try {
+          // 학교 정보 조회
+          const schoolDoc = await db.collection('settings').doc('school').get();
+          if (schoolDoc.exists) {
+            schoolInfo = schoolDoc.data();
+            localStorage.setItem(STORAGE_KEY_SCHOOL, JSON.stringify(schoolInfo));
+            applySchoolInfoToUI();
+          }
+
+          // 학년별 반 수 설정 조회
+          const gcDoc = await db.collection('settings').doc('grade_classes').get();
+          if (gcDoc.exists) {
+            const gcData = gcDoc.data();
+            if (gcData && gcData.counts) {
+              if (gcData.counts[1]) GRADE_CLASS_COUNTS[1] = Number(gcData.counts[1]);
+              if (gcData.counts[2]) GRADE_CLASS_COUNTS[2] = Number(gcData.counts[2]);
+              if (gcData.counts[3]) GRADE_CLASS_COUNTS[3] = Number(gcData.counts[3]);
+              localStorage.setItem(STORAGE_KEY_GRADE_CLASSES, JSON.stringify(GRADE_CLASS_COUNTS));
+              applyGradeClassCountsToUI();
+            }
+          }
+
+          // 시간표 데이터 조회
+          const classesSnapshot = await db.collection('classes').get();
+          if (!classesSnapshot.empty) {
+            const remoteClasses = {};
+            classesSnapshot.forEach(doc => {
+              remoteClasses[doc.id] = doc.data();
+            });
+            classSchedules = remoteClasses;
+            localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
+          }
+
+          // 참관록 실시간 리스너
+          db.collection('observations')
+            .orderBy('timestamp', 'desc')
+            .onSnapshot((snapshot) => {
+              const list = [];
+              snapshot.forEach(doc => {
+                list.push({ id: doc.id, ...doc.data() });
+              });
+              observationsList = list;
+              localStorage.setItem(STORAGE_KEY_OBSERVATIONS, JSON.stringify(observationsList));
+              renderAdminObservations();
+            }, (error) => {
+              console.warn('참관록 리스너 오류:', error);
+            });
+        } catch (e) {
+          console.warn('Firestore 연동 실패:', e);
+        }
+      }
+
+      renderAdminScheduleList();
+      renderAdminObservations();
+    }
+
+    // 기본 표준 시간표 54개 시딩 (국어, 수학, 영어, 과학, 사회, 음악, 미술, 체육 등)
+    function seedDefaultScheduleDataInternal() {
+      const subjectsPool = [
+        { subject: '국어', teachers: ['김하늘', '이소망', '박은우'] },
+        { subject: '수학', teachers: ['최진수', '정다인', '강도현'] },
+        { subject: '영어', teachers: ['이지은', '스미스', '윤서아'] },
+        { subject: '과학', teachers: ['한지민', '송민호', '오세훈'] },
+        { subject: '사회', teachers: ['배성우', '유진아', '임재혁'] },
+        { subject: '역사', teachers: ['서동욱', '고윤아', '신태호'] },
+        { subject: '도덕', teachers: ['문선영', '권혁진', '황보라'] },
+        { subject: '음악', teachers: ['조은별', '양선희', '안유진'] },
+        { subject: '미술', teachers: ['차선우', '노하은', '류시원'] },
+        { subject: '체육', teachers: ['김강토', '남궁민', '장기용'] }
+      ];
+
+      for (let g = 1; g <= 3; g++) {
+        const maxClass = GRADE_CLASS_COUNTS[g];
+        for (let c = 1; c <= maxClass; c++) {
+          for (let p = 2; p <= 3; p++) {
+            const key = `${g}_${c}_${p}`;
+            const idx = (g * 7 + c * 3 + p) % subjectsPool.length;
+            const subObj = subjectsPool[idx];
+            const teacherIdx = (c + p) % subObj.teachers.length;
+            classSchedules[key] = {
+              grade: g,
+              classNum: c,
+              period: p,
+              subject: subObj.subject,
+              teacher: `${subObj.teachers[teacherIdx]} 선생님`,
+              updatedAt: new Date().toISOString()
+            };
+          }
+        }
+      }
+      localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
+    }
+
+    /**
+     * ==============================================================================
+     * 기능 1: 학년 선택
+     * ==============================================================================
+     */
+    function selectGrade(grade) {
+      state.selectedGrade = Number(grade);
+      
+      document.querySelectorAll('.grade-group .select-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.grade) === state.selectedGrade);
+      });
+
+      document.getElementById('gradeSelectionHint').textContent = `선택: ${grade}학년`;
+
+      state.selectedClass = null;
+      renderClassButtons();
+      updateClassInfoDisplay();
+    }
+
+    /**
+     * ==============================================================================
+     * 기능 2: 반 선택 (1학년: 8반, 2학년: 10반, 3학년: 9반)
+     * ==============================================================================
+     */
+    function renderClassButtons() {
+      const container = document.getElementById('classButtonsContainer');
+      const hint = document.getElementById('classSelectionHint');
+
+      if (!state.selectedGrade) {
+        container.innerHTML = `
+          <div class="placeholder-box">
+            👆 먼저 1단계에서 학년을 선택하시면 반 선택 버튼이 나타납니다.
+          </div>
+        `;
+        hint.textContent = '학년 선택 후 활성화됩니다';
+        return;
+      }
+
+      const maxClass = GRADE_CLASS_COUNTS[state.selectedGrade] || 8;
+      hint.textContent = `${state.selectedGrade}학년은 1반부터 ${maxClass}반까지 있습니다`;
+
+      let buttonsHtml = `<div class="class-grid">`;
+      for (let i = 1; i <= maxClass; i++) {
+        const isSelected = state.selectedClass === i;
+        buttonsHtml += `
+          <button 
+            type="button" 
+            class="select-btn class-btn ${isSelected ? 'active' : ''}" 
+            data-class="${i}" 
+            onclick="selectClass(${i})"
+          >
+            <span>${i}반</span>
+          </button>
+        `;
+      }
+      buttonsHtml += `</div>`;
+      container.innerHTML = buttonsHtml;
+    }
+
+    function selectClass(classNum) {
+      state.selectedClass = Number(classNum);
+
+      document.querySelectorAll('.class-grid .select-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.class) === state.selectedClass);
+      });
+
+      document.getElementById('classSelectionHint').textContent = `선택: ${state.selectedGrade}학년 ${classNum}반`;
+      updateClassInfoDisplay();
+    }
+
+    /**
+     * ==============================================================================
+     * 기능 3: 교시 선택 (2교시, 3교시)
+     * ==============================================================================
+     */
+    function selectPeriod(period) {
+      state.selectedPeriod = Number(period);
+
+      document.querySelectorAll('.period-group .select-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.period) === state.selectedPeriod);
+      });
+
+      document.getElementById('periodSelectionHint').textContent = `선택: ${period}교시 (${period === 2 ? '10:00~10:45' : '11:00~11:45'})`;
+      updateClassInfoDisplay();
+    }
+
+    /**
+     * ==============================================================================
+     * 기능 5: 선택한 학년, 반, 교시에 따른 교과목과 교사명 표시
+     * ==============================================================================
+     */
+    function updateClassInfoDisplay() {
+      const section = document.getElementById('classInfoSection');
+      const badge = document.getElementById('infoSelectionBadge');
+      const timeSpan = document.getElementById('infoPeriodTime');
+      const subjectVal = document.getElementById('infoSubjectValue');
+      const teacherVal = document.getElementById('infoTeacherValue');
+      const adminNotice = document.getElementById('infoAdminNotice');
+
+      if (state.selectedGrade && state.selectedClass && state.selectedPeriod) {
+        section.style.display = 'block';
+        
+        badge.textContent = `${state.selectedGrade}학년 ${state.selectedClass}반 ${state.selectedPeriod}교시 수업`;
+        timeSpan.textContent = state.selectedPeriod === 2 ? '10:00 ~ 10:45 수업' : '11:00 ~ 11:45 수업';
+
+        const scheduleKey = `${state.selectedGrade}_${state.selectedClass}_${state.selectedPeriod}`;
+        const schedule = classSchedules[scheduleKey];
+
+        if (schedule && schedule.subject && schedule.teacher) {
+          subjectVal.textContent = schedule.subject;
+          subjectVal.className = 'info-value';
+          teacherVal.textContent = schedule.teacher;
+          teacherVal.className = 'info-value';
+          adminNotice.style.display = 'none';
+        } else {
+          subjectVal.textContent = '미등록 (수업 정보 입력 필요)';
+          subjectVal.className = 'info-value info-missing';
+          teacherVal.textContent = '미등록 (담당 교사 입력 필요)';
+          teacherVal.className = 'info-value info-missing';
+          adminNotice.style.display = 'block';
+        }
+      } else {
+        section.style.display = 'none';
+      }
+    }
+
+    /**
+     * ==============================================================================
+     * 기능 6: 참관록 작성 및 제출 (요청 3: 학부모 성명 및 자녀 이름 삭제됨)
+     * ==============================================================================
+     */
+    function appendTagText(text) {
+      const textarea = document.getElementById('observationContent');
+      if (textarea.value.trim().length === 0) {
+        textarea.value = text;
+      } else {
+        textarea.value = textarea.value.trim() + ' ' + text;
+      }
+      textarea.focus();
+      updateCharCount();
+    }
+
+    function updateCharCount() {
+      const textarea = document.getElementById('observationContent');
+      const countSpan = document.getElementById('charCount');
+      countSpan.textContent = `${textarea.value.length} / 1500자`;
+    }
+
+    async function handleObservationSubmit(event) {
+      event.preventDefault();
+
+      if (!state.selectedGrade) {
+        showToast('⚠️ 1단계에서 학년을 먼저 선택해주세요.');
+        window.scrollTo({ top: 120, behavior: 'smooth' });
+        return;
+      }
+      if (!state.selectedClass) {
+        showToast('⚠️ 2단계에서 반을 선택해주세요.');
+        window.scrollTo({ top: 220, behavior: 'smooth' });
+        return;
+      }
+      if (!state.selectedPeriod) {
+        showToast('⚠️ 3단계에서 교시를 선택해주세요.');
+        window.scrollTo({ top: 320, behavior: 'smooth' });
+        return;
+      }
+
+      const content = document.getElementById('observationContent').value.trim();
+
+      if (content.length < 5) {
+        showToast('⚠️ 참관 소감을 최소 5자 이상 정성껏 작성해주세요.');
+        document.getElementById('observationContent').focus();
+        return;
+      }
+
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `<span>⏳ 저장 중입니다...</span>`;
+
+      const scheduleKey = `${state.selectedGrade}_${state.selectedClass}_${state.selectedPeriod}`;
+      const schedule = classSchedules[scheduleKey] || { subject: '일반수업', teacher: '선생님' };
+
+      const now = new Date();
+      const observationRecord = {
+        grade: state.selectedGrade,
+        classNum: state.selectedClass,
+        period: state.selectedPeriod,
+        subject: schedule.subject || '일반수업',
+        teacher: schedule.teacher || '선생님',
+        content: content,
+        createdAt: now.toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }),
+        timestamp: now.getTime()
+      };
+
+      try {
+        if (isFirebaseReady && db) {
+          const docRef = await db.collection('observations').add(observationRecord);
+          observationRecord.id = docRef.id;
+          observationsList.unshift(observationRecord);
+          localStorage.setItem(STORAGE_KEY_OBSERVATIONS, JSON.stringify(observationsList));
+        } else {
+          observationRecord.id = 'local_' + Date.now();
+          observationsList.unshift(observationRecord);
+          localStorage.setItem(STORAGE_KEY_OBSERVATIONS, JSON.stringify(observationsList));
+        }
+
+        showToast('🎉 참관록이 성공적으로 제출되었습니다! 감사합니다.');
+        document.getElementById('observationContent').value = '';
+        updateCharCount();
+        renderAdminObservations();
+
+      } catch (err) {
+        console.error('참관록 저장 오류:', err);
+        observationRecord.id = 'local_' + Date.now();
+        observationsList.unshift(observationRecord);
+        localStorage.setItem(STORAGE_KEY_OBSERVATIONS, JSON.stringify(observationsList));
+        showToast('⚠️ 네트워크 상태로 인해 우선 로컬에 안전하게 저장되었습니다.');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = `<span>✍️ 참관록 제출하기</span>`;
+      }
+    }
+
+    /**
+     * ==============================================================================
+     * 관리자 확인란 (비밀번호: 3000)
+     * ==============================================================================
+     */
+    function openAdminModal() {
+      document.getElementById('adminModal').classList.add('active');
+      // 이미 인증되었으면 인증창 생략
+      if (sessionStorage.getItem('admin_authenticated') === 'true') {
+        document.getElementById('adminAuthSection').style.display = 'none';
+        document.getElementById('adminContentSection').style.display = 'block';
+        renderAdminObservations();
+        renderAdminScheduleList();
+      } else {
+        document.getElementById('adminAuthSection').style.display = 'block';
+        document.getElementById('adminContentSection').style.display = 'none';
+        setTimeout(() => document.getElementById('adminPasswordInput')?.focus(), 200);
+      }
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.remove('active');
+    }
+
+    function checkAdminPassword() {
+      const input = document.getElementById('adminPasswordInput');
+      const err = document.getElementById('adminAuthError');
+      if (input.value === ADMIN_PASSWORD) {
+        sessionStorage.setItem('admin_authenticated', 'true');
+        document.getElementById('adminAuthSection').style.display = 'none';
+        document.getElementById('adminContentSection').style.display = 'block';
+        err.style.display = 'none';
+        renderAdminObservations();
+        renderAdminScheduleList();
+      } else {
+        err.style.display = 'block';
+        input.focus();
+      }
+    }
+
+    function switchAdminTab(tabName) {
+      document.getElementById('tabBtnObservations')?.classList.toggle('active', tabName === 'observations');
+      document.getElementById('tabBtnSchedule')?.classList.toggle('active', tabName === 'schedule');
+      document.getElementById('tabBtnSchool')?.classList.toggle('active', tabName === 'school');
+      document.getElementById('tabBtnFirebase')?.classList.toggle('active', tabName === 'firebase');
+
+      const obsContent = document.getElementById('tabContentObservations');
+      const schContent = document.getElementById('tabContentSchedule');
+      const scInfoContent = document.getElementById('tabContentSchool');
+      const fbContent = document.getElementById('tabContentFirebase');
+
+      if (obsContent) obsContent.style.display = tabName === 'observations' ? 'block' : 'none';
+      if (schContent) schContent.style.display = tabName === 'schedule' ? 'block' : 'none';
+      if (scInfoContent) scInfoContent.style.display = tabName === 'school' ? 'block' : 'none';
+      if (fbContent) fbContent.style.display = tabName === 'firebase' ? 'block' : 'none';
+    }
+
+    function updateAdminClassOptions() {
+      const grade = Number(document.getElementById('adminGradeSelect').value);
+      const classSelect = document.getElementById('adminClassSelect');
+      const maxClass = GRADE_CLASS_COUNTS[grade] || 8;
+      
+      classSelect.innerHTML = '';
+      for (let i = 1; i <= maxClass; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.textContent = `${i}반`;
+        classSelect.appendChild(opt);
+      }
+    }
+
+    /**
+     * ==============================================================================
+     * 관리자: 참관록 관리 (요청 1)
+     * ==============================================================================
+     */
+    function renderAdminObservations() {
+      const tbody = document.getElementById('adminObsTableBody');
+      const countSpan = document.getElementById('adminObsCount');
+      if (!tbody) return;
+
+      const gradeFilter = document.getElementById('obsFilterGrade')?.value || 'all';
+      const periodFilter = document.getElementById('obsFilterPeriod')?.value || 'all';
+
+      const filtered = observationsList.filter(item => {
+        if (gradeFilter !== 'all' && Number(item.grade) !== Number(gradeFilter)) return false;
+        if (periodFilter !== 'all' && Number(item.period) !== Number(periodFilter)) return false;
+        return true;
+      });
+
+      if (countSpan) countSpan.textContent = filtered.length;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">아직 제출된 참관록이 없습니다.</td></tr>`;
+        return;
+      }
+
+      let html = '';
+      filtered.forEach(item => {
+        html += `
+          <tr>
+            <td style="white-space: nowrap; font-size: 11px; color: var(--text-muted);">${item.createdAt || '-'}</td>
+            <td><strong>${item.grade}학년 ${item.classNum}반 ${item.period}교시</strong></td>
+            <td><strong>${escapeHtml(item.subject || '-')}</strong><br><span style="font-size: 12px; color: var(--text-muted);">${escapeHtml(item.teacher || '-')}</span></td>
+            <td style="max-width: 320px; word-break: break-all; white-space: pre-wrap; line-height: 1.5;">${escapeHtml(item.content)}</td>
+            <td>
+              <button type="button" class="btn-nav btn-nav-danger" style="padding: 3px 8px; font-size: 11px;" onclick="deleteObservationItem('${item.id}')">
+                삭제
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    async function deleteObservationItem(id) {
+      if (!confirm('이 참관록을 정말 삭제하시겠습니까?')) return;
+
+      observationsList = observationsList.filter(o => o.id !== id);
+      localStorage.setItem(STORAGE_KEY_OBSERVATIONS, JSON.stringify(observationsList));
+
+      if (isFirebaseReady && db && id && !id.startsWith('local_')) {
+        try {
+          await db.collection('observations').doc(id).delete();
+        } catch (e) {
+          console.warn('Firestore 참관록 삭제 실패:', e);
+        }
+      }
+
+      renderAdminObservations();
+      showToast('참관록이 삭제되었습니다.');
+    }
+
+    async function clearAllObservations() {
+      if (observationsList.length === 0) {
+        showToast('삭제할 참관록이 없습니다.');
+        return;
+      }
+
+      const confirmMsg = `⚠️ 정말로 모든 참관록(${observationsList.length}건)을 영구 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.`;
+      if (!confirm(confirmMsg)) return;
+
+      const doubleCheck = prompt('삭제를 원하시면 "전체삭제"라고 정확히 입력해주세요:');
+      if (doubleCheck !== '전체삭제') {
+        showToast('입력이 일치하지 않아 삭제가 취소되었습니다.');
+        return;
+      }
+
+      const oldList = [...observationsList];
+      observationsList = [];
+      localStorage.setItem(STORAGE_KEY_OBSERVATIONS, JSON.stringify(observationsList));
+
+      if (isFirebaseReady && db) {
+        try {
+          const batch = db.batch();
+          oldList.forEach(item => {
+            if (item.id && !item.id.startsWith('local_')) {
+              batch.delete(db.collection('observations').doc(item.id));
+            }
+          });
+          await batch.commit();
+        } catch (e) {
+          console.warn('Firestore 참관록 전체 삭제 오류:', e);
+        }
+      }
+
+      renderAdminObservations();
+      showToast('🗑️ 모든 참관록이 삭제되었습니다.');
+    }
+
+    // CSV 파일 다운로드
+    function downloadObservationsCSV() {
+      if (observationsList.length === 0) {
+        showToast('⚠️ 내보낼 참관록 데이터가 없습니다.');
+        return;
+      }
+
+      let csv = '\uFEFF'; // Excel 한글 깨짐 방지 BOM
+      csv += '접수일시,학년,반,교시,수업교과목,담당교사,참관소감및의견\n';
+
+      observationsList.forEach(item => {
+        const cleanContent = (item.content || '').replace(/"/g, '""').replace(/\n/g, ' ');
+        csv += `"${item.createdAt}","${item.grade}학년","${item.classNum}반","${item.period}교시","${item.subject}","${item.teacher}","${cleanContent}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${schoolInfo.schoolName}_공개수업_참관록_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('📥 참관록 엑셀(CSV) 파일이 다운로드되었습니다.');
+    }
+
+    /**
+     * ==============================================================================
+     * 관리자: 수업 정보 개별 등록 및 수정, 전체 초기화 (요청 5)
+     * ==============================================================================
+     */
+    function renderAdminScheduleList() {
+      const tbody = document.getElementById('scheduleTableBody');
+      const countSpan = document.getElementById('scheduleCount');
+      if (!tbody) return;
+
+      const keys = Object.keys(classSchedules).sort((a, b) => {
+        const [gA, cA, pA] = a.split('_').map(Number);
+        const [gB, cB, pB] = b.split('_').map(Number);
+        if (gA !== gB) return gA - gB;
+        if (cA !== cB) return cA - cB;
+        return pA - pB;
+      });
+
+      if (countSpan) countSpan.textContent = keys.length;
+
+      if (keys.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 25px;">등록된 수업 정보가 없습니다. 위 입력창에서 등록하거나 [기본 시간표 자동 채우기] 또는 [엑셀 일괄 등록]을 이용하세요.</td></tr>`;
+        return;
+      }
+
+      let html = '';
+      keys.forEach(key => {
+        const item = classSchedules[key];
+        html += `
+          <tr>
+            <td><strong>${item.grade}학년 ${item.classNum}반</strong></td>
+            <td><span class="info-badge" style="font-size: 11px; padding: 2px 8px;">${item.period}교시</span></td>
+            <td><strong>${escapeHtml(item.subject)}</strong></td>
+            <td>${escapeHtml(item.teacher)}</td>
+            <td>
+              <div style="display: flex; gap: 4px;">
+                <button type="button" class="btn-nav" style="padding: 3px 8px; font-size: 11px; color: var(--primary);" onclick="startEditScheduleItem('${key}')">
+                  ✏️ 수정
+                </button>
+                <button type="button" class="btn-nav btn-nav-danger" style="padding: 3px 8px; font-size: 11px;" onclick="deleteScheduleItem('${key}')">
+                  삭제
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    // 수업 정보 수정 모드 시작 (요청 5: 수정할 수 있게 버튼)
+    function startEditScheduleItem(key) {
+      const item = classSchedules[key];
+      if (!item) return;
+
+      document.getElementById('scheduleFormModeTitle').textContent = `✏️ [${item.grade}학년 ${item.classNum}반 ${item.period}교시] 수업 정보 수정`;
+      document.getElementById('scheduleCancelEditBtn').style.display = 'inline-block';
+      document.getElementById('saveScheduleBtn').textContent = '💾 수정사항 반영하기';
+
+      document.getElementById('editOriginalKey').value = key;
+      document.getElementById('adminGradeSelect').value = item.grade;
+      updateAdminClassOptions();
+      document.getElementById('adminClassSelect').value = item.classNum;
+      document.getElementById('adminPeriodSelect').value = item.period;
+      document.getElementById('adminSubjectInput').value = item.subject;
+      document.getElementById('adminTeacherInput').value = item.teacher;
+
+      // 폼으로 스크롤 이동
+      document.getElementById('adminScheduleForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+      document.getElementById('adminSubjectInput').focus();
+    }
+
+    function cancelScheduleEdit() {
+      document.getElementById('scheduleFormModeTitle').textContent = `➕ 학년·반·교시별 수업 정보 등록 / 수정`;
+      document.getElementById('scheduleCancelEditBtn').style.display = 'none';
+      document.getElementById('saveScheduleBtn').textContent = '💾 수업 정보 저장하기';
+      document.getElementById('editOriginalKey').value = '';
+      document.getElementById('adminSubjectInput').value = '';
+      document.getElementById('adminTeacherInput').value = '';
+    }
+
+    async function handleSaveSchedule(event) {
+      event.preventDefault();
+      const grade = Number(document.getElementById('adminGradeSelect').value);
+      const classNum = Number(document.getElementById('adminClassSelect').value);
+      const period = Number(document.getElementById('adminPeriodSelect').value);
+      const subject = document.getElementById('adminSubjectInput').value.trim();
+      const teacher = document.getElementById('adminTeacherInput').value.trim();
+
+      if (!subject || !teacher) {
+        showToast('⚠️ 교과목명과 담당 교사명을 입력해주세요.');
+        return;
+      }
+
+      const scheduleKey = `${grade}_${classNum}_${period}`;
+      const scheduleData = {
+        grade,
+        classNum,
+        period,
+        subject,
+        teacher,
+        updatedAt: new Date().toISOString()
+      };
+
+      classSchedules[scheduleKey] = scheduleData;
+      localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
+
+      if (isFirebaseReady && db) {
+        try {
+          await db.collection('classes').doc(scheduleKey).set(scheduleData);
+        } catch (e) {
+          console.warn('Firestore 시간표 저장 실패:', e);
+        }
+      }
+
+      renderAdminScheduleList();
+      updateClassInfoDisplay();
+      showToast(`✅ [${grade}학년 ${classNum}반 ${period}교시] ${subject}(${teacher}) 저장 완료!`);
+      
+      cancelScheduleEdit();
+    }
+
+    async function deleteScheduleItem(key) {
+      if (!confirm(`해당 수업 정보를 삭제하시겠습니까?`)) return;
+
+      delete classSchedules[key];
+      localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
+
+      if (isFirebaseReady && db) {
+        try {
+          await db.collection('classes').doc(key).delete();
+        } catch (e) {
+          console.warn('Firestore 삭제 오류:', e);
+        }
+      }
+
+      renderAdminScheduleList();
+      updateClassInfoDisplay();
+      showToast('수업 정보가 삭제되었습니다.');
+    }
+
+    // 요청 5: 한번에 초기화할 수 있는 버튼 & 진짜 초기화된다는 경고 메시지 확인 후 삭제
+    async function resetAllSchedulesWithWarning() {
+      const currentCount = Object.keys(classSchedules).length;
+      if (currentCount === 0) {
+        showToast('초기화할 수업 정보가 없습니다.');
+        return;
+      }
+
+      const warn1 = `🚨 [경고: 수업 정보 전체 초기화]\n\n현재 등록된 총 ${currentCount}개의 모든 학년·반·교시 수업 정보(과목, 교사)가 영구적으로 삭제됩니다!\n\n정말로 전체 초기화하시겠습니까?`;
+      if (!confirm(warn1)) return;
+
+      const promptInput = prompt('데이터 안전을 위해 확인 문구를 입력해주세요.\n"초기화"라고 정확히 입력하시면 삭제가 진행됩니다:');
+      if (promptInput !== '초기화') {
+        showToast('확인 문구가 일치하지 않아 초기화가 취소되었습니다.');
+        return;
+      }
+
+      const oldKeys = Object.keys(classSchedules);
+      classSchedules = {};
+      localStorage.removeItem(STORAGE_KEY_CLASSES);
+
+      if (isFirebaseReady && db) {
+        try {
+          const batch = db.batch();
+          oldKeys.forEach(k => {
+            batch.delete(db.collection('classes').doc(k));
+          });
+          await batch.commit();
+        } catch (e) {
+          console.warn('Firestore 전체 삭제 실패:', e);
+        }
+      }
+
+      renderAdminScheduleList();
+      updateClassInfoDisplay();
+      cancelScheduleEdit();
+      showToast('⚠️ 모든 수업 정보가 완전히 초기화되었습니다.');
+    }
+
+    async function seedDefaultSchedule() {
+      if (!confirm('기본 표준 시간표 54개(1학년 1~8반, 2학년 1~10반, 3학년 1~9반의 2·3교시)를 자동으로 채우시겠습니까? 기존 항목은 덮어씌워집니다.')) return;
+      seedDefaultScheduleDataInternal();
+
+      if (isFirebaseReady && db) {
+        try {
+          const batch = db.batch();
+          for (const key in classSchedules) {
+            const ref = db.collection('classes').doc(key);
+            batch.set(ref, classSchedules[key]);
+          }
+          await batch.commit();
+        } catch (e) {
+          console.warn('Firestore 일괄 등록 오류:', e);
+        }
+      }
+
+      renderAdminScheduleList();
+      updateClassInfoDisplay();
+      showToast('전체 학년·반 기본 시간표가 등록되었습니다!');
+    }
+
+    /**
+     * ==============================================================================
+     * 기능 6: 엑셀 파일로 한번에 입력/수정 (요청 6, SheetJS)
+     * ==============================================================================
+     */
+    function setupExcelDragAndDrop() {
+      const dropZone = document.getElementById('excelDropZone');
+      if (!dropZone) return;
+
+      ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropZone.classList.add('dragover');
+        }, false);
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, (e) => {
+          e.preventDefault();
+          dropZone.classList.remove('dragover');
+        }, false);
+      });
+
+      dropZone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length > 0) {
+          processExcelFile(files[0]);
+        }
+      });
+    }
+
+    function handleExcelFileUpload(event) {
+      const file = event.target.files[0];
+      if (file) {
+        processExcelFile(file);
+      }
+    }
+
+    function parseExcelNumber(val) {
+      if (val === null || val === undefined || val === '') return null;
+      if (typeof val === 'number') {
+        return isNaN(val) ? null : Math.floor(val);
+      }
+      const str = String(val).trim();
+      const matched = str.match(/\d+/);
+      if (matched) {
+        return parseInt(matched[0], 10);
+      }
+      return null;
+    }
+
+    function findRowValue(row, candidates) {
+      const rowKeys = Object.keys(row);
+      // 1단계: 공백 제거 후 완전 일치
+      for (const candidate of candidates) {
+        const target = candidate.replace(/\s+/g, '').toLowerCase();
+        for (const key of rowKeys) {
+          const cleanKey = key.replace(/\s+/g, '').toLowerCase();
+          if (cleanKey === target) {
+            const val = row[key];
+            if (val !== undefined && val !== null && String(val).trim() !== '') {
+              return String(val).trim();
+            }
+          }
+        }
+      }
+      // 2단계: 부분 일치
+      for (const candidate of candidates) {
+        const target = candidate.replace(/\s+/g, '').toLowerCase();
+        for (const key of rowKeys) {
+          const cleanKey = key.replace(/\s+/g, '').toLowerCase();
+          if (cleanKey.includes(target)) {
+            const val = row[key];
+            if (val !== undefined && val !== null && String(val).trim() !== '') {
+              return String(val).trim();
+            }
+          }
+        }
+      }
+      return '';
+    }
+
+    function processExcelFile(file) {
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+          if (!rawRows || rawRows.length === 0) {
+            showToast('⚠️ 엑셀 파일에 데이터가 없습니다.');
+            return;
+          }
+
+          parsedExcelData = [];
+          rawRows.forEach((row, idx) => {
+            const gradeRaw = findRowValue(row, ['학년', 'grade', '학 년']);
+            const grade = parseExcelNumber(gradeRaw);
+
+            const classRaw = findRowValue(row, ['반', 'class', '학급', '반번호', '학급번호']);
+            const classNum = parseExcelNumber(classRaw);
+
+            const periodRaw = findRowValue(row, ['교시', 'period', '시간', '교 시', '시간대']);
+            const period = parseExcelNumber(periodRaw);
+
+            const subject = findRowValue(row, ['교과목', '과목', '교과', 'subject', '수업', '교과목명', '과목명']);
+            let teacher = findRowValue(row, ['담당교사', '교사', '선생님', '교사명', 'teacher', '담당선생님', '성함', '지도교사']);
+
+            if (teacher && !teacher.includes('선생님') && teacher.length <= 4) {
+              teacher = `${teacher} 선생님`;
+            }
+
+            const isValid = Boolean(
+              grade && grade >= 1 && grade <= 3 &&
+              classNum && classNum >= 1 &&
+              period && period >= 1 &&
+              subject &&
+              teacher
+            );
+
+            let invalidReason = '';
+            if (!isValid) {
+              const missing = [];
+              if (!grade || grade < 1 || grade > 3) missing.push('학년(1~3)');
+              if (!classNum || classNum < 1) missing.push('반');
+              if (!period || period < 1) missing.push('교시');
+              if (!subject) missing.push('과목');
+              if (!teacher) missing.push('교사');
+              invalidReason = missing.join(', ') + ' 확인 필요';
+            }
+
+            parsedExcelData.push({
+              rowNum: idx + 2,
+              grade: grade || (gradeRaw || '미입력'),
+              classNum: classNum || (classRaw || '미입력'),
+              period: period || (periodRaw || '미입력'),
+              subject: subject || '미입력',
+              teacher: teacher || '미입력',
+              valid: isValid,
+              reason: invalidReason
+            });
+          });
+
+          renderExcelPreview();
+          const validCount = parsedExcelData.filter(d => d.valid).length;
+          showToast(`📊 엑셀에서 ${parsedExcelData.length}개 행 인식 완료 (반영 가능: ${validCount}건)`);
+        } catch (err) {
+          console.error('엑셀 파싱 오류:', err);
+          showToast('⚠️ 엑셀 파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function renderExcelPreview() {
+      const section = document.getElementById('excelPreviewSection');
+      const tbody = document.getElementById('excelPreviewTableBody');
+      const countSpan = document.getElementById('excelReadCount');
+      const validSpan = document.getElementById('excelValidCount');
+      if (!section || !tbody) return;
+
+      section.style.display = 'block';
+      const validCount = parsedExcelData.filter(d => d.valid).length;
+      if (countSpan) countSpan.textContent = parsedExcelData.length;
+      if (validSpan) validSpan.textContent = validCount;
+
+      let html = '';
+      parsedExcelData.forEach(item => {
+        const statusBadge = item.valid 
+          ? `<span style="color: #2e7d32; font-weight: 600;">✅ 정상 (반영 가능)</span>`
+          : `<span style="color: #e63946; font-weight: 600;">⚠️ ${item.reason || '필드 오류'}</span>`;
+        html += `
+          <tr style="${item.valid ? '' : 'background-color: #fef2f2;'}">
+            <td><strong>${item.grade}학년</strong></td>
+            <td>${item.classNum}반</td>
+            <td><span class="info-badge" style="font-size: 11px; padding: 2px 6px;">${item.period}교시</span></td>
+            <td><strong>${escapeHtml(item.subject)}</strong></td>
+            <td>${escapeHtml(item.teacher)}</td>
+            <td>${statusBadge}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    // 엑셀에서 읽은 데이터를 시스템에 반영
+    async function applyExcelDataToSystem() {
+      if (!parsedExcelData || parsedExcelData.length === 0) {
+        showToast('⚠️ 먼저 엑셀 파일을 선택하거나 업로드해주세요.');
+        return;
+      }
+
+      const validItems = parsedExcelData.filter(d => d.valid);
+      if (validItems.length === 0) {
+        alert('반영 가능한 유효한 데이터가 없습니다.\n엑셀 파일에 학년(1~3학년), 반, 교시, 교과목, 담당교사 항목이 올바르게 적혀있는지 확인해주세요.');
+        return;
+      }
+
+      if (!confirm(`유효한 ${validItems.length}개의 수업 정보를 시스템에 반영(등록/수정)하시겠습니까?`)) return;
+
+      const btn = document.getElementById('applyExcelBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '반영 중...';
+      }
+
+      try {
+        let maxClassesUpdated = false;
+        validItems.forEach(item => {
+          const g = Number(item.grade);
+          const c = Number(item.classNum);
+          const p = Number(item.period);
+          const key = `${g}_${c}_${p}`;
+          classSchedules[key] = {
+            grade: g,
+            classNum: c,
+            period: p,
+            subject: String(item.subject),
+            teacher: String(item.teacher),
+            updatedAt: new Date().toISOString()
+          };
+
+          // 업로드된 반 번호가 현재 설정된 반 수보다 크면 자동으로 반 수 확장 (요청 4 연동)
+          if (GRADE_CLASS_COUNTS[g] && c > GRADE_CLASS_COUNTS[g]) {
+            GRADE_CLASS_COUNTS[g] = c;
+            maxClassesUpdated = true;
+          }
+        });
+
+        if (maxClassesUpdated) {
+          localStorage.setItem(STORAGE_KEY_GRADE_CLASSES, JSON.stringify(GRADE_CLASS_COUNTS));
+          applyGradeClassCountsToUI();
+        }
+
+        localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
+
+        if (isFirebaseReady && db) {
+          try {
+            const batch = db.batch();
+            validItems.forEach(item => {
+              const key = `${item.grade}_${item.classNum}_${item.period}`;
+              const ref = db.collection('classes').doc(key);
+              batch.set(ref, classSchedules[key]);
+            });
+            await batch.commit();
+          } catch (e) {
+            console.warn('Firestore 엑셀 데이터 동기화 오류:', e);
+          }
+        }
+
+        renderAdminScheduleList();
+        updateClassInfoDisplay();
+        showToast(`🎉 총 ${validItems.length}개의 수업 정보가 성공적으로 반영되었습니다!`);
+
+        // 아래 등록된 수업 목록으로 안내
+        document.getElementById('scheduleCount')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } catch (err) {
+        console.error('엑셀 반영 오류:', err);
+        showToast('⚠️ 반영 중 오류가 발생했습니다: ' + err.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '✅ 시스템에 일괄 반영하기';
+        }
+      }
+    }
+
+    // 엑셀 템플릿 다운로드 기능
+    function downloadExcelTemplate() {
+      const sampleData = [
+        { 학년: 1, 반: 1, 교시: 2, 교과목: '국어', 담당교사: '김하늘 선생님' },
+        { 학년: 1, 반: 1, 교시: 3, 교과목: '수학', 담당교사: '최진수 선생님' },
+        { 학년: 1, 반: 2, 교시: 2, 교과목: '영어', 담당교사: '이지은 선생님' },
+        { 학년: 1, 반: 2, 교시: 3, 교과목: '과학', 담당교사: '한지민 선생님' },
+        { 학년: 2, 반: 1, 교시: 2, 교과목: '역사', 담당교사: '서동욱 선생님' },
+        { 학년: 2, 반: 1, 교시: 3, 교과목: '사회', 담당교사: '유진아 선생님' },
+        { 학년: 3, 반: 1, 교시: 2, 교과목: '음악', 담당교사: '조은별 선생님' },
+        { 학년: 3, 반: 1, 교시: 3, 교과목: '미술', 담당교사: '차선우 선생님' }
+      ];
+
+      const ws = XLSX.utils.json_to_sheet(sampleData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '수업정보양식');
+
+      // 컬럼 너비 지정
+      ws['!cols'] = [
+        { wch: 8 },  // 학년
+        { wch: 8 },  // 반
+        { wch: 8 },  // 교시
+        { wch: 15 }, // 교과목
+        { wch: 18 }  // 담당교사
+      ];
+
+      XLSX.writeFile(wb, '공개수업_수업정보_엑셀양식.xlsx');
+      showToast('📥 엑셀 표준 양식 파일(.xlsx)이 다운로드되었습니다.');
+    }
+
+    // 현재 등록된 시간표를 엑셀로 내보내기
+    function exportCurrentScheduleExcel() {
+      const keys = Object.keys(classSchedules).sort((a, b) => {
+        const [gA, cA, pA] = a.split('_').map(Number);
+        const [gB, cB, pB] = b.split('_').map(Number);
+        if (gA !== gB) return gA - gB;
+        if (cA !== cB) return cA - cB;
+        return pA - pB;
+      });
+
+      if (keys.length === 0) {
+        showToast('내보낼 수업 정보가 없습니다.');
+        return;
+      }
+
+      const rows = keys.map(k => {
+        const it = classSchedules[k];
+        return {
+          학년: it.grade,
+          반: it.classNum,
+          교시: it.period,
+          교과목: it.subject,
+          담당교사: it.teacher
+        };
+      });
+
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '등록된수업정보');
+      XLSX.writeFile(wb, `${schoolInfo.schoolName}_수업시간표_목록.xlsx`);
+      showToast('📤 현재 시간표 엑셀 파일이 다운로드되었습니다.');
+    }
+
+    /**
+     * ==============================================================================
+     * Firebase 설정 가이드 및 유틸리티
+     * ==============================================================================
+     */
+    function openFirebaseGuideModal() {
+      document.getElementById('firebaseGuideModal').classList.add('active');
+    }
+
+    function closeFirebaseGuideModal() {
+      document.getElementById('firebaseGuideModal').classList.remove('active');
+    }
+
+    function copyTemplateCode() {
+      const code = document.getElementById('templateCodeBlock').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('📋 코드가 클립보드에 복사되었습니다!');
+      }).catch(() => {
+        showToast('⚠️ 직접 드래그하여 복사해주세요.');
+      });
+    }
+
+    function applyCustomFirebaseConfig() {
+      const raw = document.getElementById('quickConfigInput').value.trim();
+      if (!raw) {
+        showToast('⚠️ 설정 JSON을 입력해주세요.');
+        return;
+      }
+      try {
+        const parsed = JSON.parse(raw);
+        if (!parsed.apiKey || !parsed.projectId) {
+          throw new Error('apiKey와 projectId 필드가 포함되어야 합니다.');
+        }
+        localStorage.setItem(STORAGE_KEY_CUSTOM_CONFIG, JSON.stringify(parsed));
+        showToast('✅ 설정이 저장되었습니다. 새로고침하여 연결합니다.');
+        setTimeout(() => location.reload(), 1000);
+      } catch (err) {
+        showToast('⚠️ 올바른 JSON 형식이 아닙니다: ' + err.message);
+      }
+    }
+
+    function resetToDefaultFirebaseConfig() {
+      localStorage.removeItem(STORAGE_KEY_CUSTOM_CONFIG);
+      showToast('기본값으로 초기화되었습니다.');
+      setTimeout(() => location.reload(), 1000);
+    }
+
+    function showToast(message) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transition = 'opacity 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    function escapeHtml(string) {
+      if (!string) return '';
+      return String(string)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+  </script>
+</body>
+</html>
