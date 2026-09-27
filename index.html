@@ -71,6 +71,11 @@
       max-width: 820px;
       margin: 0 auto;
       padding: 20px 16px 40px;
+      transition: max-width 0.25s ease;
+    }
+
+    .container.admin-view-mode {
+      max-width: 1100px;
     }
 
     /* Top Navigation Bar */
@@ -805,12 +810,120 @@
       border-color: var(--primary);
     }
 
+    /* 참관록 모아보기: 보기 모드 (전체 목록, 반별, 교사별) 및 그룹 카드 스타일 */
+    .obs-mode-btn {
+      padding: 7px 15px;
+      font-size: 13px;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .obs-mode-btn:hover {
+      color: var(--text-main);
+    }
+
+    .obs-mode-btn.active {
+      background: #ffffff;
+      color: var(--primary);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+      font-weight: 700;
+    }
+
+    .obs-group-card {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      margin-bottom: 16px;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .obs-group-card-header {
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .obs-group-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .obs-group-badge {
+      font-size: 12px;
+      font-weight: 600;
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+    }
+
+    .obs-group-body {
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .obs-item-card {
+      background: #fcfdfc;
+      border: 1px solid #e2e8f0;
+      border-left: 4px solid var(--primary);
+      border-radius: 6px;
+      padding: 12px 14px;
+    }
+
+    .obs-item-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .obs-item-tags {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .obs-item-text {
+      font-size: 13.5px;
+      color: var(--text-main);
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #ffffff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #f1f5f9;
+    }
+
     /* Print Styles */
     @media print {
       body {
         background-color: #fff;
       }
-      .top-nav, .btn-group, .btn-submit, .quick-tags, .modal-close, .modal-footer, .nav-actions, #classButtonsContainer {
+      .top-nav, .btn-group, .btn-submit, .quick-tags, .modal-close, .modal-footer, .nav-actions, #classButtonsContainer, .obs-mode-selector, #obsSearchKeyword, .form-select, .btn-nav-danger {
         display: none !important;
       }
       .container {
@@ -822,24 +935,32 @@
         border: 1px solid #ccc;
         break-inside: avoid;
       }
+      .admin-table-container, #obsViewListContainer, #obsViewClassContainer, #obsViewTeacherContainer {
+        max-height: none !important;
+        overflow: visible !important;
+      }
+      .obs-group-card, .obs-item-card {
+        break-inside: avoid;
+        page-break-inside: avoid;
+      }
     }
   </style>
 </head>
 <body>
 
-  <div class="container">
-    <!-- Top Navigation Bar -->
-    <header class="top-nav">
-      <div id="firebaseStatusBadge" class="status-badge" title="Firebase 클라우드 연동 상태">
-        <span class="status-dot"></span>
-        <span id="firebaseStatusText">🟢 실시간 동기화 활성</span>
-      </div>
-      <div class="nav-actions">
-        <button type="button" class="btn-nav btn-nav-primary" onclick="openAdminModal()">
-          ⚙️ 관리자 페이지
-        </button>
-      </div>
-    </header>
+  <div class="container" id="appContainer">
+    <!-- ========================================== -->
+    <!-- 1. 학부모 참관록 메인 화면 -->
+    <!-- ========================================== -->
+    <div id="parentMainView">
+      <!-- Top Navigation Bar (실시간 동기화 글씨는 삭제되고 관리자 페이지에서만 표시됨) -->
+      <header class="top-nav" style="justify-content: flex-end;">
+        <div class="nav-actions">
+          <button type="button" class="btn-nav btn-nav-primary" onclick="openAdminView()">
+            ⚙️ 관리자 페이지
+          </button>
+        </div>
+      </header>
 
     <!-- App Title Banner -->
     <section class="app-header">
@@ -897,7 +1018,7 @@
           <span>교시 선택</span>
           <span class="step-hint" id="periodSelectionHint">참관하실 교시를 선택해주세요</span>
         </div>
-        <div class="btn-group period-group">
+        <div class="btn-group period-group" id="parentPeriodButtonGroup">
           <button type="button" class="select-btn" data-period="2" onclick="selectPeriod(2)">
             <span>2교시</span>
           </button>
@@ -1020,68 +1141,84 @@
       <p id="footerSchoolText">행복중학교 학부모 공개수업 참관록 시스템 &copy; 2026. 본 시스템은 모바일 및 데스크톱 브라우저에 최적화되어 있습니다.</p>
     </footer>
   </div>
+  <!-- [끝] 학부모 참관록 메인 화면 -->
 
-  <!-- 모달 1: 관리자 페이지 (수업 정보/엑셀/참관록/학교명 관리) -->
-  <div id="adminModal" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h3 class="modal-title">⚙️ 관리자 페이지</h3>
-        <button type="button" class="modal-close" onclick="closeAdminModal()">&times;</button>
-      </div>
-      <div class="modal-body">
-        <!-- 관리자 비밀번호 확인 영역 (비밀번호: 3000) -->
-        <div id="adminAuthSection">
-          <div style="text-align: center; padding: 24px 10px;">
-            <div style="font-size: 42px; margin-bottom: 12px;">🔒</div>
-            <h4 style="font-size: 17px; margin-bottom: 6px;">관리자 인증이 필요합니다</h4>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 18px;">
-              수업 시간표 및 참관록 데이터 관리를 위해 관리자 비밀번호를 입력해주세요.
-            </p>
-            <div style="max-width: 280px; margin: 0 auto; display: flex; gap: 8px;">
-              <input type="password" id="adminPasswordInput" class="form-input" placeholder="비밀번호 입력" style="text-align: center;" onkeydown="if(event.key==='Enter') checkAdminPassword()">
-              <button type="button" class="btn-nav btn-nav-primary" onclick="checkAdminPassword()">확인</button>
-            </div>
-            <div id="adminAuthError" style="color: var(--danger); font-size: 13px; margin-top: 10px; display: none;">
-              ⚠️ 비밀번호가 일치하지 않습니다. 다시 입력해주세요.
-            </div>
-          </div>
+  <!-- ========================================== -->
+  <!-- 2. 관리자 페이지 (일반 전체 페이지로 표시) -->
+  <!-- ========================================== -->
+  <div id="adminPageView" style="display: none;">
+    <!-- 관리자 페이지 상단 네비게이션: 메인으로 가기 & 동기화 상태 뱃지(관리자 전용) & 로그아웃 -->
+    <header class="top-nav" style="margin-bottom: 16px;">
+      <button type="button" class="btn-nav" onclick="closeAdminView()" style="font-weight: 700; background-color: #ffffff; border-color: #86efac; color: #166534; box-shadow: var(--shadow-sm);">
+        ← 🏠 학부모 참관록(메인화면)으로 돌아가기
+      </button>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <!-- 실시간 동기화 상태 표시 뱃지 (관리자 페이지에서만 표시) -->
+        <div id="firebaseStatusBadge" class="status-badge" title="Firebase 클라우드 연동 상태">
+          <span class="status-dot"></span>
+          <span id="firebaseStatusText">🟢 실시간 동기화 활성</span>
         </div>
+        <button type="button" class="btn-nav btn-nav-danger" style="font-size: 12px; padding: 6px 12px;" onclick="adminLogout()">
+          로그아웃
+        </button>
+      </div>
+    </header>
 
-        <!-- 관리자 패널 메인 영역 (인증 완료 시) -->
-        <div id="adminContentSection" style="display: none;">
-          <!-- 탭 네비게이션: 참관록, 수업정보&엑셀, 학교명 관리 -->
-          <div class="tabs-nav">
-            <button type="button" class="tab-btn active" id="tabBtnObservations" onclick="switchAdminTab('observations')">
-              📋 참관록 모아보기
-            </button>
-            <button type="button" class="tab-btn" id="tabBtnSchedule" onclick="switchAdminTab('schedule')">
-              📖 수업 정보 &amp; 엑셀 일괄 등록
-            </button>
-            <button type="button" class="tab-btn" id="tabBtnSchool" onclick="switchAdminTab('school')">
-              🏫 학교명 관리
-            </button>
-          </div>
+    <!-- 관리자 페이지 전용 타이틀 배너 -->
+    <section class="app-header" style="background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%); margin-bottom: 24px;">
+      <span class="school-tag" id="adminHeaderSchoolTag">🏫 서울행복중학교 관리자 페이지</span>
+      <h1 class="app-title">⚙️ 수업 시간표 및 참관록 관리자 페이지</h1>
+      <p class="app-subtitle">
+        학부모 참관록 실시간 모아보기 및 인쇄, 학년·반·교시별 수업 시간표 개별/엑셀 일괄 등록, 학년별 학급 수를 편리하게 관리하실 수 있습니다.
+      </p>
+    </section>
 
-          <!-- 탭 1: 참관록 모아보기 및 관리 -->
-          <div id="tabContentObservations">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 8px;">
-              <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                <span style="font-size: 14px; font-weight: 700; color: var(--text-main);">
-                  총 접수된 참관록: <strong id="adminObsCount" style="color: var(--primary);">0</strong>건
-                </span>
-                <select id="obsFilterGrade" class="form-select" style="width: auto; padding: 6px 10px; font-size: 12px;" onchange="renderAdminObservations()">
-                  <option value="all">전체 학년</option>
-                  <option value="1">1학년</option>
-                  <option value="2">2학년</option>
-                  <option value="3">3학년</option>
-                </select>
-                <select id="obsFilterPeriod" class="form-select" style="width: auto; padding: 6px 10px; font-size: 12px;" onchange="renderAdminObservations()">
-                  <option value="all">전체 교시</option>
-                  <option value="2">2교시</option>
-                  <option value="3">3교시</option>
-                </select>
+    <!-- 관리자 비밀번호 확인 영역 (비밀번호: 3000) -->
+    <div id="adminAuthSection" class="card" style="text-align: center; padding: 40px 20px; max-width: 520px; margin: 20px auto 40px;">
+      <div style="font-size: 48px; margin-bottom: 12px;">🔒</div>
+      <h3 style="font-size: 19px; font-weight: 700; margin-bottom: 8px; color: var(--text-main);">관리자 인증이 필요합니다</h3>
+      <p style="font-size: 13.5px; color: var(--text-muted); margin-bottom: 22px;">
+        수업 시간표 및 참관록 데이터 관리를 위해 관리자 비밀번호를 입력해주세요.
+      </p>
+      <div style="max-width: 290px; margin: 0 auto; display: flex; gap: 8px;">
+        <input type="password" id="adminPasswordInput" class="form-input" placeholder="비밀번호 입력" style="text-align: center; font-size: 15px;" onkeydown="if(event.key==='Enter') checkAdminPassword()">
+        <button type="button" class="btn-nav btn-nav-primary" style="padding: 10px 18px; font-weight: 700;" onclick="checkAdminPassword()">확인</button>
+      </div>
+      <div id="adminAuthError" style="color: var(--danger); font-size: 13px; margin-top: 12px; display: none; font-weight: 600;">
+        ⚠️ 비밀번호가 일치하지 않습니다. 다시 입력해주세요.
+      </div>
+    </div>
+
+    <!-- 관리자 패널 메인 영역 (인증 완료 시) -->
+    <div id="adminContentSection" style="display: none;">
+      <!-- 탭 네비게이션: 참관록, 수업정보&엑셀, 학교명 관리 -->
+      <div class="tabs-nav" style="margin-bottom: 20px;">
+        <button type="button" class="tab-btn active" id="tabBtnObservations" onclick="switchAdminTab('observations')" style="font-size: 14.5px; padding: 12px 20px;">
+          📋 참관록 모아보기
+        </button>
+        <button type="button" class="tab-btn" id="tabBtnSchedule" onclick="switchAdminTab('schedule')" style="font-size: 14.5px; padding: 12px 20px;">
+          📖 수업 정보 &amp; 엑셀 일괄 등록
+        </button>
+        <button type="button" class="tab-btn" id="tabBtnSchool" onclick="switchAdminTab('school')" style="font-size: 14.5px; padding: 12px 20px;">
+          🏫 학교명 관리
+        </button>
+      </div>
+
+          <!-- 탭 1: 참관록 모아보기 및 관리 (전체 목록, 반별 모아보기, 교사별 모아보기) -->
+          <div id="tabContentObservations" class="card">
+            <!-- 상단 요약 카운트 & 액션 버튼 -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 6px 14px; border-radius: var(--radius-full); display: flex; align-items: center; gap: 8px;">
+                  <span style="font-size: 13px; font-weight: 700; color: #166534;">
+                    총 접수: <strong id="adminObsCount" style="color: var(--primary); font-size: 15px;">0</strong>건
+                  </span>
+                  <span id="adminObsFilteredBadge" style="display: none; font-size: 12px; color: #15803d; border-left: 1.5px solid #86efac; padding-left: 8px;">
+                    조건 일치: <strong id="adminObsFilteredCount">0</strong>건
+                  </span>
+                </div>
               </div>
-              <div style="display: flex; gap: 6px;">
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
                 <button type="button" class="btn-nav" onclick="downloadObservationsCSV()">
                   📥 엑셀(CSV) 다운로드
                 </button>
@@ -1094,12 +1231,78 @@
               </div>
             </div>
 
-            <div class="admin-table-container" style="max-height: 400px;">
+            <!-- 보기 모드 전환 탭 버튼 (전체 목록 / 반별 모아보기 / 교사별 모아보기) -->
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+              <div class="obs-mode-selector" style="display: inline-flex; background: #e2e8f0; padding: 3px; border-radius: 8px; gap: 3px;">
+                <button type="button" id="obsModeBtnList" class="obs-mode-btn active" onclick="setObsViewMode('list')">
+                  📋 전체 목록 보기
+                </button>
+                <button type="button" id="obsModeBtnClass" class="obs-mode-btn" onclick="setObsViewMode('class')">
+                  🏫 반별 모아보기
+                </button>
+                <button type="button" id="obsModeBtnTeacher" class="obs-mode-btn" onclick="setObsViewMode('teacher')">
+                  👩‍🏫 교사별 모아보기
+                </button>
+              </div>
+              <div id="obsViewModeDesc" style="font-size: 12.5px; color: var(--text-muted);">
+                * 학년 / 반 / 교시순 정렬 전체 참관록 목록입니다.
+              </div>
+            </div>
+
+            <!-- 상세 필터 바 (학년, 반, 교시, 교사, 검색어) -->
+            <div style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 12px 14px; margin-bottom: 16px;">
+              <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <!-- 학년 필터 -->
+                <div id="obsFilterGradeWrapper" style="display: flex; align-items: center; gap: 4px;">
+                  <label for="obsFilterGrade" style="font-size: 12px; font-weight: 600; color: var(--text-muted); white-space: nowrap;">학년:</label>
+                  <select id="obsFilterGrade" class="form-select" style="width: auto; padding: 6px 10px; font-size: 12px;" onchange="onObsGradeFilterChange()">
+                    <option value="all">전체 학년</option>
+                    <option value="1">1학년</option>
+                    <option value="2">2학년</option>
+                    <option value="3">3학년</option>
+                  </select>
+                </div>
+                <!-- 반 필터 (반별 선택) -->
+                <div id="obsFilterClassWrapper" style="display: flex; align-items: center; gap: 4px;">
+                  <label for="obsFilterClass" style="font-size: 12px; font-weight: 600; color: var(--text-muted); white-space: nowrap;">반:</label>
+                  <select id="obsFilterClass" class="form-select" style="width: auto; padding: 6px 10px; font-size: 12px;" onchange="renderAdminObservations()">
+                    <option value="all">전체 반</option>
+                  </select>
+                </div>
+                <!-- 교시 필터 (수업정보에 등록된 데이터 기반 동적 생성) -->
+                <div id="obsFilterPeriodWrapper" style="display: flex; align-items: center; gap: 4px;">
+                  <label for="obsFilterPeriod" style="font-size: 12px; font-weight: 600; color: var(--text-muted); white-space: nowrap;">교시:</label>
+                  <select id="obsFilterPeriod" class="form-select" style="width: auto; padding: 6px 10px; font-size: 12px;" onchange="renderAdminObservations()">
+                    <option value="all">전체 교시</option>
+                    <option value="2">2교시</option>
+                    <option value="3">3교시</option>
+                  </select>
+                </div>
+                <!-- 교사별 필터 -->
+                <div id="obsFilterTeacherWrapper" style="display: flex; align-items: center; gap: 4px;">
+                  <label for="obsFilterTeacher" style="font-size: 12px; font-weight: 600; color: var(--text-muted); white-space: nowrap;">교사:</label>
+                  <select id="obsFilterTeacher" class="form-select" style="width: auto; padding: 6px 10px; font-size: 12px;" onchange="renderAdminObservations()">
+                    <option value="all">전체 교사</option>
+                  </select>
+                </div>
+                <!-- 검색창 -->
+                <div style="display: flex; align-items: center; gap: 4px; flex: 1; min-width: 170px;">
+                  <input type="text" id="obsSearchKeyword" class="form-input" placeholder="🔍 소감 내용/과목/교사 검색..." style="padding: 6px 10px; font-size: 12px;" oninput="renderAdminObservations()">
+                </div>
+                <!-- 초기화 버튼 -->
+                <button type="button" class="btn-nav" style="padding: 5px 10px; font-size: 11.5px;" onclick="resetObsFilters()">
+                  🔄 초기화
+                </button>
+              </div>
+            </div>
+
+            <!-- 1. 전체 목록 뷰 (기본 테이블) -->
+            <div id="obsViewListContainer" class="admin-table-container" style="max-height: 480px;">
               <table class="data-table">
                 <thead>
                   <tr>
-                    <th style="width: 130px;">접수일시</th>
-                    <th style="width: 110px;">학년/반/교시</th>
+                    <th style="width: 125px;">접수일시</th>
+                    <th style="width: 115px;">학년/반/교시</th>
                     <th style="width: 140px;">과목 및 교사</th>
                     <th>참관 소감 및 의견</th>
                     <th style="width: 60px;">삭제</th>
@@ -1110,10 +1313,20 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- 2. 반별 모아보기 뷰 -->
+            <div id="obsViewClassContainer" style="display: none;">
+              <!-- JS로 반별 카드 그룹 렌더링 -->
+            </div>
+
+            <!-- 3. 교사별 모아보기 뷰 -->
+            <div id="obsViewTeacherContainer" style="display: none;">
+              <!-- JS로 교사별 카드 그룹 렌더링 -->
+            </div>
           </div>
 
           <!-- 탭 2: 수업 정보 관리 & 엑셀 일괄 등록 (한 페이지로 통합 + 학년별 반 수 설정) -->
-          <div id="tabContentSchedule" style="display: none;">
+          <div id="tabContentSchedule" class="card" style="display: none;">
             
             <!-- 1. 학년별 반 수 설정 (요청 4) -->
             <div style="background-color: #f0fdf4; border: 1.5px solid #bbf7d0; border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
@@ -1140,7 +1353,52 @@
               </form>
             </div>
 
-            <!-- 2. 개별 수업 정보 등록 / 수정 폼 -->
+            <!-- 2. 참관 운영 교시 설정 (요청 5: 교시가 2~3교시가 아니라 다른 교시로 변경될 수도 있으니 선택 관리 및 학부모 페이지 연동) -->
+            <div style="background-color: #f0f7ff; border: 1.5px solid #bfdbfe; border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
+              <div style="font-size: 14px; font-weight: 700; color: #1e40af; margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 6px;">
+                <span>⏰ 공개수업 참관 대상 교시 설정</span>
+                <span style="font-size: 11px; font-weight: normal; color: #2563eb;">* 설정된 교시가 학부모 참관록 페이지 교시 선택 버튼 및 조회 필터에 실시간 연동됩니다</span>
+              </div>
+              <form id="activePeriodsForm" onsubmit="handleSaveActivePeriods(event)" style="margin-top: 8px;">
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 10px;">
+                  <span style="font-size: 12px; font-weight: 600; color: var(--text-color); margin-right: 2px;">운영 교시 선택:</span>
+                  <label class="period-checkbox-label" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px; cursor: pointer;">
+                    <input type="checkbox" name="activePeriodCheck" value="1" style="cursor: pointer;"> 1교시
+                  </label>
+                  <label class="period-checkbox-label" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px; cursor: pointer;">
+                    <input type="checkbox" name="activePeriodCheck" value="2" checked style="cursor: pointer;"> 2교시
+                  </label>
+                  <label class="period-checkbox-label" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px; cursor: pointer;">
+                    <input type="checkbox" name="activePeriodCheck" value="3" checked style="cursor: pointer;"> 3교시
+                  </label>
+                  <label class="period-checkbox-label" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px; cursor: pointer;">
+                    <input type="checkbox" name="activePeriodCheck" value="4" style="cursor: pointer;"> 4교시
+                  </label>
+                  <label class="period-checkbox-label" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px; cursor: pointer;">
+                    <input type="checkbox" name="activePeriodCheck" value="5" style="cursor: pointer;"> 5교시
+                  </label>
+                  <label class="period-checkbox-label" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px; cursor: pointer;">
+                    <input type="checkbox" name="activePeriodCheck" value="6" style="cursor: pointer;"> 6교시
+                  </label>
+                  <label class="period-checkbox-label" style="display: inline-flex; align-items: center; gap: 4px; padding: 5px 9px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px; cursor: pointer;">
+                    <input type="checkbox" name="activePeriodCheck" value="7" style="cursor: pointer;"> 7교시
+                  </label>
+                </div>
+                <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+                  <div style="display: flex; gap: 6px; align-items: center; font-size: 11.5px; color: var(--text-muted);">
+                    <span>빠른 프리셋:</span>
+                    <button type="button" class="btn-nav" style="padding: 3px 8px; font-size: 11px;" onclick="setPeriodPreset([2, 3])">2~3교시 (기본)</button>
+                    <button type="button" class="btn-nav" style="padding: 3px 8px; font-size: 11px;" onclick="setPeriodPreset([1, 2, 3, 4])">1~4교시</button>
+                    <button type="button" class="btn-nav" style="padding: 3px 8px; font-size: 11px;" onclick="setPeriodPreset([1, 2, 3, 4, 5, 6, 7])">전체(1~7교시)</button>
+                  </div>
+                  <button type="submit" class="btn-nav btn-nav-primary" style="padding: 8px 16px; font-weight: 700; background: #2563eb; border-color: #1d4ed8;">
+                    💾 교시 설정 저장
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- 3. 개별 수업 정보 등록 / 수정 폼 -->
             <div style="background-color: #f7faf8; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 14px; margin-bottom: 16px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
                 <span id="scheduleFormModeTitle" style="font-size: 14px; font-weight: 700; color: var(--primary);">
@@ -1322,7 +1580,7 @@
           </div>
 
           <!-- 탭 4: 학교명 등록 및 관리 (요청 4) -->
-          <div id="tabContentSchool" style="display: none;">
+          <div id="tabContentSchool" class="card" style="display: none;">
             <div class="guide-step">
               <div class="guide-step-title">🏫 학교명 및 행사 타이틀 관리</div>
               <p>
@@ -1345,10 +1603,18 @@
             </div>
           </div>
         </div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn-nav" onclick="closeAdminModal()">닫기</button>
-      </div>
+
+        <!-- 관리자 페이지 하단 돌아가기 버튼 바 -->
+        <div style="display: flex; justify-content: center; margin: 30px 0 20px;">
+          <button type="button" class="btn-nav" onclick="closeAdminView()" style="padding: 12px 28px; font-size: 14.5px; font-weight: 700; background-color: #ffffff; border-color: #86efac; color: #166534; box-shadow: var(--shadow-sm);">
+            ← 🏠 학부모 참관록(메인화면)으로 돌아가기
+          </button>
+        </div>
+
+        <!-- 관리자 전용 푸터 -->
+        <footer style="text-align: center; font-size: 13px; color: var(--text-light); margin-top: 20px;">
+          <p id="adminFooterSchoolText">행복중학교 학부모 공개수업 관리자 모드 &copy; 2026.</p>
+        </footer>
     </div>
   </div>
 
@@ -1476,7 +1742,11 @@
     const STORAGE_KEY_OBSERVATIONS = 'open_class_observations_data_v2';
     const STORAGE_KEY_SCHOOL = 'open_class_school_info_v2';
     const STORAGE_KEY_GRADE_CLASSES = 'open_class_grade_counts_v2';
+    const STORAGE_KEY_ACTIVE_PERIODS = 'open_class_active_periods_v2';
     const STORAGE_KEY_CUSTOM_CONFIG = 'open_class_custom_firebase_config_v2';
+
+    // 참관 대상 운영 교시 목록 (기본값: 2교시, 3교시)
+    let ACTIVE_PERIODS = [2, 3];
 
     // 캐시
     let classSchedules = {};
@@ -1491,6 +1761,7 @@
     window.addEventListener('DOMContentLoaded', async () => {
       loadSchoolInfo();
       loadGradeClassCounts();
+      loadActivePeriods();
       loadInitialData();
       await initFirebase();
       setupExcelDragAndDrop();
@@ -1517,7 +1788,7 @@
     }
 
     function applyGradeClassCountsToUI() {
-      // 1. 관리자 확인란 input 필드 갱신
+      // 1. 관리자 페이지 input 필드 갱신
       const g1Input = document.getElementById('grade1ClassCountInput');
       const g2Input = document.getElementById('grade2ClassCountInput');
       const g3Input = document.getElementById('grade3ClassCountInput');
@@ -1569,6 +1840,127 @@
       showToast(`✅ 학년별 반 수 설정이 저장되었습니다! (1학년:${g1}반, 2학년:${g2}반, 3학년:${g3}반)`);
     }
 
+    /**
+     * ==============================================================================
+     * 공개수업 참관 대상 운영 교시 관리 (요청 5)
+     * 관리자가 교시를 선택/변경하면 학부모 참관록 페이지 및 필터에도 실시간 연동
+     * ==============================================================================
+     */
+    function loadActivePeriods() {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEY_ACTIVE_PERIODS);
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            ACTIVE_PERIODS = parsed.map(Number).filter(p => !isNaN(p) && p >= 1 && p <= 12).sort((a, b) => a - b);
+          }
+        }
+      } catch (e) {
+        console.warn('운영 교시 로드 오류:', e);
+      }
+      applyActivePeriodsToUI();
+    }
+
+    function applyActivePeriodsToUI() {
+      // 1. 관리자 운영 교시 설정 체크박스 갱신
+      const checkboxes = document.querySelectorAll('input[name="activePeriodCheck"]');
+      checkboxes.forEach(cb => {
+        cb.checked = ACTIVE_PERIODS.includes(Number(cb.value));
+      });
+
+      // 2. 학부모 메인화면 교시 선택 버튼 목록 동적 렌더링
+      const parentGroup = document.getElementById('parentPeriodButtonGroup');
+      if (parentGroup) {
+        let buttonsHtml = '';
+        ACTIVE_PERIODS.forEach(p => {
+          const isActive = (state.selectedPeriod === p);
+          buttonsHtml += `
+            <button type="button" class="select-btn ${isActive ? 'active' : ''}" data-period="${p}" onclick="selectPeriod(${p})">
+              <span>${p}교시</span>
+            </button>
+          `;
+        });
+        parentGroup.innerHTML = buttonsHtml;
+      }
+
+      // 힌트 텍스트 및 선택 상태 동기화
+      const hint = document.getElementById('periodSelectionHint');
+      if (state.selectedPeriod && ACTIVE_PERIODS.includes(state.selectedPeriod)) {
+        if (hint) hint.textContent = `선택: ${state.selectedPeriod}교시`;
+      } else {
+        state.selectedPeriod = null;
+        if (hint) {
+          hint.textContent = `참관하실 교시를 선택해주세요 (운영: ${ACTIVE_PERIODS.map(p => p + '교시').join(', ')})`;
+        }
+      }
+
+      // 3. 관리자 개별 수업정보 등록창의 교시 선택 드롭다운 동적 갱신
+      populateAdminPeriodSelect();
+
+      // 4. 참관록 모아보기 교시 필터 드롭다운 갱신
+      populateObsPeriodFilter();
+
+      // 5. 수업 정보 표시 영역 갱신
+      updateClassInfoDisplay();
+    }
+
+    function populateAdminPeriodSelect() {
+      const select = document.getElementById('adminPeriodSelect');
+      if (!select) return;
+
+      const prevVal = Number(select.value);
+      let html = '';
+      ACTIVE_PERIODS.forEach(p => {
+        html += `<option value="${p}">${p}교시</option>`;
+      });
+
+      if (prevVal && !ACTIVE_PERIODS.includes(prevVal)) {
+        html += `<option value="${prevVal}">${prevVal}교시 (기타)</option>`;
+      }
+
+      select.innerHTML = html;
+      if (prevVal && (ACTIVE_PERIODS.includes(prevVal) || select.querySelector(`option[value="${prevVal}"]`))) {
+        select.value = String(prevVal);
+      } else if (ACTIVE_PERIODS.length > 0) {
+        select.value = String(ACTIVE_PERIODS[0]);
+      }
+    }
+
+    async function handleSaveActivePeriods(event) {
+      if (event) event.preventDefault();
+      const checkedBoxes = Array.from(document.querySelectorAll('input[name="activePeriodCheck"]:checked'));
+      const selected = checkedBoxes.map(cb => Number(cb.value)).filter(p => !isNaN(p) && p >= 1 && p <= 12).sort((a, b) => a - b);
+
+      if (selected.length === 0) {
+        showToast('⚠️ 최소 1개 이상의 교시를 선택해주세요.');
+        return;
+      }
+
+      ACTIVE_PERIODS = selected;
+      localStorage.setItem(STORAGE_KEY_ACTIVE_PERIODS, JSON.stringify(ACTIVE_PERIODS));
+
+      if (isFirebaseReady && db) {
+        try {
+          await db.collection('settings').doc('active_periods').set({
+            periods: ACTIVE_PERIODS,
+            updatedAt: new Date().toISOString()
+          });
+        } catch (e) {
+          console.warn('Firestore 운영 교시 저장 오류:', e);
+        }
+      }
+
+      applyActivePeriodsToUI();
+      showToast(`💾 공개수업 참관 교시가 [${ACTIVE_PERIODS.map(p => p + '교시').join(', ')}] 설정되었습니다! 학부모 화면에 즉시 반영됩니다.`);
+    }
+
+    function setPeriodPreset(presetArr) {
+      const checkboxes = document.querySelectorAll('input[name="activePeriodCheck"]');
+      checkboxes.forEach(cb => {
+        cb.checked = presetArr.includes(Number(cb.value));
+      });
+    }
+
     async function initFirebase() {
       try {
         let activeConfig = null;
@@ -1587,7 +1979,7 @@
           // not found
         }
 
-        // 2. 사용자가 브라우저 관리자 확인란에서 저장한 커스텀 설정 확인
+        // 2. 사용자가 브라우저 관리자 페이지에서 저장한 커스텀 설정 확인
         if (!activeConfig) {
           const savedCustomConfig = localStorage.getItem(STORAGE_KEY_CUSTOM_CONFIG);
           if (savedCustomConfig) {
@@ -1674,6 +2066,7 @@
             list.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
             observationsList = list;
             localStorage.setItem(STORAGE_KEY_OBSERVATIONS, JSON.stringify(observationsList));
+            populateObsTeacherFilter();
             renderAdminObservations();
           }, (err) => {
             console.warn('참관록 실시간 동기화 오류:', err);
@@ -1724,6 +2117,7 @@
             }
 
             renderAdminScheduleList();
+            populateObsPeriodFilter();
             updateClassInfoDisplay();
           }, (err) => {
             console.warn('시간표 실시간 동기화 오류:', err);
@@ -1732,7 +2126,7 @@
         console.warn('시간표 리스너 등록 실패:', e);
       }
 
-      // 3. 학교 정보 및 학년별 반 수 실시간 동기화 리스너
+      // 3. 학교 정보, 학년별 반 수, 참관 운영 교시 실시간 동기화 리스너
       try {
         db.collection('settings').doc('school').onSnapshot((doc) => {
           if (doc.exists) {
@@ -1751,6 +2145,17 @@
               if (data.counts[3]) GRADE_CLASS_COUNTS[3] = Number(data.counts[3]);
               localStorage.setItem(STORAGE_KEY_GRADE_CLASSES, JSON.stringify(GRADE_CLASS_COUNTS));
               applyGradeClassCountsToUI();
+            }
+          }
+        });
+
+        db.collection('settings').doc('active_periods').onSnapshot((doc) => {
+          if (doc.exists) {
+            const data = doc.data();
+            if (data && Array.isArray(data.periods) && data.periods.length > 0) {
+              ACTIVE_PERIODS = data.periods.map(Number).filter(p => !isNaN(p) && p >= 1 && p <= 12).sort((a, b) => a - b);
+              localStorage.setItem(STORAGE_KEY_ACTIVE_PERIODS, JSON.stringify(ACTIVE_PERIODS));
+              applyActivePeriodsToUI();
             }
           }
         });
@@ -1802,6 +2207,8 @@
     function applySchoolInfoToUI() {
       const headerTag = document.getElementById('headerSchoolTag');
       const footerText = document.getElementById('footerSchoolText');
+      const adminHeaderTag = document.getElementById('adminHeaderSchoolTag');
+      const adminFooterText = document.getElementById('adminFooterSchoolText');
       const schoolInput = document.getElementById('schoolNameInput');
       const eventInput = document.getElementById('eventTitleInput');
       const domainInput = document.getElementById('settingPublicUrlInput');
@@ -1809,6 +2216,8 @@
       const fullTag = `🏫 ${schoolInfo.schoolName} ${schoolInfo.eventTitle || '학부모 공개수업의 날'}`;
       if (headerTag) headerTag.textContent = fullTag;
       if (footerText) footerText.textContent = `${schoolInfo.schoolName} 학부모 공개수업 참관록 시스템 © 2026. 모바일 및 데스크톱 브라우저 최적화`;
+      if (adminHeaderTag) adminHeaderTag.textContent = `🏫 ${schoolInfo.schoolName} 관리자 페이지`;
+      if (adminFooterText) adminFooterText.textContent = `${schoolInfo.schoolName} 학부모 공개수업 관리자 모드 © 2026.`;
       
       if (schoolInput) schoolInput.value = schoolInfo.schoolName;
       if (eventInput) eventInput.value = schoolInfo.eventTitle || '학부모 공개수업의 날';
@@ -1909,6 +2318,8 @@
         console.warn('로컬 데이터 읽기 오류:', e);
       }
 
+      populateObsClassFilter();
+      populateObsTeacherFilter();
       renderAdminScheduleList();
       renderAdminObservations();
     }
@@ -1928,10 +2339,12 @@
         { subject: '체육', teachers: ['김강토', '남궁민', '장기용'] }
       ];
 
+      const periodsToSeed = (ACTIVE_PERIODS && ACTIVE_PERIODS.length > 0) ? ACTIVE_PERIODS : [2, 3];
       for (let g = 1; g <= 3; g++) {
-        const maxClass = GRADE_CLASS_COUNTS[g];
+        const maxClass = GRADE_CLASS_COUNTS[g] || 8;
         for (let c = 1; c <= maxClass; c++) {
-          for (let p = 2; p <= 3; p++) {
+          for (let pIdx = 0; pIdx < periodsToSeed.length; pIdx++) {
+            const p = periodsToSeed[pIdx];
             const key = `${g}_${c}_${p}`;
             const idx = (g * 7 + c * 3 + p) % subjectsPool.length;
             const subObj = subjectsPool[idx];
@@ -2079,7 +2492,7 @@
           adminNotice.style.display = 'block';
 
           if (obsBannerText) {
-            obsBannerText.innerHTML = `<span style="color: #b45309;">[${state.selectedGrade}학년 ${state.selectedClass}반 ${state.selectedPeriod}교시]</span> <span style="color: #dc2626;">수업 정보 미등록 (관리자 확인란에서 입력 가능)</span>`;
+            obsBannerText.innerHTML = `<span style="color: #b45309;">[${state.selectedGrade}학년 ${state.selectedClass}반 ${state.selectedPeriod}교시]</span> <span style="color: #dc2626;">수업 정보 미등록 (관리자 페이지에서 입력 가능)</span>`;
           }
           if (obsBannerBadge) obsBannerBadge.style.display = 'none';
         }
@@ -2211,26 +2624,68 @@
 
     /**
      * ==============================================================================
-     * 관리자 페이지 (비밀번호: 3000)
+     * 관리자 페이지 (비밀번호: 3000) - 팝업이 아닌 일반 전체 페이지 뷰 방식
      * ==============================================================================
      */
-    function openAdminModal() {
-      document.getElementById('adminModal').classList.add('active');
-      // 이미 인증되었으면 인증창 생략
+    function openAdminView() {
+      const parentView = document.getElementById('parentMainView');
+      const adminView = document.getElementById('adminPageView');
+      const container = document.getElementById('appContainer') || document.querySelector('.container');
+
+      if (parentView) parentView.style.display = 'none';
+      if (adminView) adminView.style.display = 'block';
+      if (container) container.classList.add('admin-view-mode');
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      // 학교명 및 타이틀 갱신
+      applySchoolInfoToUI();
+
+      // 이미 인증되었으면 인증창 생략하고 바로 관리 화면 표시
       if (sessionStorage.getItem('admin_authenticated') === 'true') {
-        document.getElementById('adminAuthSection').style.display = 'none';
-        document.getElementById('adminContentSection').style.display = 'block';
+        const authSec = document.getElementById('adminAuthSection');
+        const contentSec = document.getElementById('adminContentSection');
+        if (authSec) authSec.style.display = 'none';
+        if (contentSec) contentSec.style.display = 'block';
+        populateObsClassFilter();
+        populateObsTeacherFilter();
         renderAdminObservations();
         renderAdminScheduleList();
       } else {
-        document.getElementById('adminAuthSection').style.display = 'block';
-        document.getElementById('adminContentSection').style.display = 'none';
-        setTimeout(() => document.getElementById('adminPasswordInput')?.focus(), 200);
+        const authSec = document.getElementById('adminAuthSection');
+        const contentSec = document.getElementById('adminContentSection');
+        if (authSec) authSec.style.display = 'block';
+        if (contentSec) contentSec.style.display = 'none';
+        setTimeout(() => document.getElementById('adminPasswordInput')?.focus(), 150);
       }
     }
 
-    function closeAdminModal() {
-      document.getElementById('adminModal').classList.remove('active');
+    function closeAdminView() {
+      const parentView = document.getElementById('parentMainView');
+      const adminView = document.getElementById('adminPageView');
+      const container = document.getElementById('appContainer') || document.querySelector('.container');
+
+      if (adminView) adminView.style.display = 'none';
+      if (parentView) parentView.style.display = 'block';
+      if (container) container.classList.remove('admin-view-mode');
+
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // 기존 함수명 완벽 호환
+    const openAdminModal = openAdminView;
+    const closeAdminModal = closeAdminView;
+
+    function adminLogout() {
+      sessionStorage.removeItem('admin_authenticated');
+      const authSec = document.getElementById('adminAuthSection');
+      const contentSec = document.getElementById('adminContentSection');
+      if (authSec) authSec.style.display = 'block';
+      if (contentSec) contentSec.style.display = 'none';
+      const pwInput = document.getElementById('adminPasswordInput');
+      if (pwInput) pwInput.value = '';
+      showToast('🔒 관리자 로그아웃 되었습니다.');
+      closeAdminView();
     }
 
     function checkAdminPassword() {
@@ -2241,8 +2696,11 @@
         document.getElementById('adminAuthSection').style.display = 'none';
         document.getElementById('adminContentSection').style.display = 'block';
         err.style.display = 'none';
+        populateObsClassFilter();
+        populateObsTeacherFilter();
         renderAdminObservations();
         renderAdminScheduleList();
+        showToast('🔓 관리자 인증 완료!');
       } else {
         err.style.display = 'block';
         input.focus();
@@ -2286,47 +2744,471 @@
 
     /**
      * ==============================================================================
-     * 관리자: 참관록 관리 (요청 1)
+     * 관리자: 참관록 관리 (보기 모드: 전체 목록, 반별 모아보기, 교사별 모아보기)
      * ==============================================================================
      */
-    function renderAdminObservations() {
-      const tbody = document.getElementById('adminObsTableBody');
-      const countSpan = document.getElementById('adminObsCount');
-      if (!tbody) return;
+    let currentObsViewMode = 'list'; // 'list' | 'class' | 'teacher'
 
-      const gradeFilter = document.getElementById('obsFilterGrade')?.value || 'all';
-      const periodFilter = document.getElementById('obsFilterPeriod')?.value || 'all';
+    function setObsViewMode(mode) {
+      currentObsViewMode = mode;
+      document.getElementById('obsModeBtnList')?.classList.toggle('active', mode === 'list');
+      document.getElementById('obsModeBtnClass')?.classList.toggle('active', mode === 'class');
+      document.getElementById('obsModeBtnTeacher')?.classList.toggle('active', mode === 'teacher');
 
-      const filtered = observationsList.filter(item => {
-        if (gradeFilter !== 'all' && Number(item.grade) !== Number(gradeFilter)) return false;
-        if (periodFilter !== 'all' && Number(item.period) !== Number(periodFilter)) return false;
-        return true;
+      const descEl = document.getElementById('obsViewModeDesc');
+      if (descEl) {
+        if (mode === 'list') descEl.textContent = '* 학년 / 반 / 교시순으로 정렬된 전체 참관록 목록입니다.';
+        else if (mode === 'class') descEl.textContent = '* 학년 및 반별로 접수된 참관록을 모아서 표시합니다. (교사 선택 드롭다운 제외)';
+        else if (mode === 'teacher') descEl.textContent = '* 담당 선생님별로 접수된 참관록을 모아서 표시합니다. (교사 선택 전용)';
+      }
+
+      // 요청 2: 반별 모아보기에서는 교사를 선택하는건 필요 없을 것 같아. 교사 드롭다운은 삭제해줘.
+      // 요청 4: 교사별 모아보기는 교사만 리스트 있으면 될 것 같아. 학년, 반, 교시는 삭제해줘
+      const gradeWrapper = document.getElementById('obsFilterGradeWrapper');
+      const classWrapper = document.getElementById('obsFilterClassWrapper');
+      const periodWrapper = document.getElementById('obsFilterPeriodWrapper');
+      const teacherWrapper = document.getElementById('obsFilterTeacherWrapper');
+
+      if (mode === 'list') {
+        if (gradeWrapper) gradeWrapper.style.display = 'flex';
+        if (classWrapper) classWrapper.style.display = 'flex';
+        if (periodWrapper) periodWrapper.style.display = 'flex';
+        if (teacherWrapper) teacherWrapper.style.display = 'flex';
+      } else if (mode === 'class') {
+        // 반별 모아보기: 교사 드롭다운 숨김
+        if (gradeWrapper) gradeWrapper.style.display = 'flex';
+        if (classWrapper) classWrapper.style.display = 'flex';
+        if (periodWrapper) periodWrapper.style.display = 'flex';
+        if (teacherWrapper) teacherWrapper.style.display = 'none';
+        const teacherSelect = document.getElementById('obsFilterTeacher');
+        if (teacherSelect) teacherSelect.value = 'all';
+      } else if (mode === 'teacher') {
+        // 교사별 모아보기: 학년, 반, 교시 숨김 및 교사만 표시
+        if (gradeWrapper) gradeWrapper.style.display = 'none';
+        if (classWrapper) classWrapper.style.display = 'none';
+        if (periodWrapper) periodWrapper.style.display = 'none';
+        if (teacherWrapper) teacherWrapper.style.display = 'flex';
+        const gradeSelect = document.getElementById('obsFilterGrade');
+        const classSelect = document.getElementById('obsFilterClass');
+        const periodSelect = document.getElementById('obsFilterPeriod');
+        if (gradeSelect) gradeSelect.value = 'all';
+        if (classSelect) classSelect.value = 'all';
+        if (periodSelect) periodSelect.value = 'all';
+      }
+
+      renderAdminObservations();
+    }
+
+    function onObsGradeFilterChange() {
+      populateObsClassFilter();
+      renderAdminObservations();
+    }
+
+    function populateObsClassFilter() {
+      const gradeSelect = document.getElementById('obsFilterGrade');
+      const classSelect = document.getElementById('obsFilterClass');
+      if (!classSelect) return;
+
+      const currentVal = classSelect.value;
+      const selectedGrade = gradeSelect ? gradeSelect.value : 'all';
+
+      let maxClass = 8;
+      if (selectedGrade !== 'all') {
+        maxClass = GRADE_CLASS_COUNTS[Number(selectedGrade)] || 8;
+      } else {
+        maxClass = Math.max(
+          GRADE_CLASS_COUNTS[1] || 8,
+          GRADE_CLASS_COUNTS[2] || 8,
+          GRADE_CLASS_COUNTS[3] || 8,
+          8
+        );
+      }
+
+      let optionsHtml = '<option value="all">전체 반</option>';
+      for (let c = 1; c <= maxClass; c++) {
+        optionsHtml += `<option value="${c}">${c}반</option>`;
+      }
+      classSelect.innerHTML = optionsHtml;
+
+      if (currentVal && (currentVal === 'all' || Number(currentVal) <= maxClass)) {
+        classSelect.value = currentVal;
+      } else {
+        classSelect.value = 'all';
+      }
+    }
+
+    // 요청 3: 참관록 모아보기에서 교시 드롭다운은 수업정보 등록에 있는 데이터를 확인하여 해당 교시만 표시 (예: 2~3교시)
+    function populateObsPeriodFilter() {
+      const periodSelect = document.getElementById('obsFilterPeriod');
+      if (!periodSelect) return;
+
+      const currentVal = periodSelect.value;
+      const periodsSet = new Set();
+
+      // 수업정보 등록(classSchedules)에 있는 데이터를 확인하여 등록된 교시만 추출
+      Object.values(classSchedules).forEach(sched => {
+        if (sched && sched.period) {
+          periodsSet.add(Number(sched.period));
+        }
       });
 
-      if (countSpan) countSpan.textContent = filtered.length;
+      // 만약 수업정보 등록 데이터가 비어있다면 현재 활성화된 운영 교시(ACTIVE_PERIODS) 사용
+      if (periodsSet.size === 0) {
+        ACTIVE_PERIODS.forEach(p => periodsSet.add(Number(p)));
+      }
 
-      if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 30px;">아직 제출된 참관록이 없습니다.</td></tr>`;
+      const periods = Array.from(periodsSet).sort((a, b) => a - b);
+      let optionsHtml = '<option value="all">전체 교시</option>';
+      periods.forEach(p => {
+        optionsHtml += `<option value="${p}">${p}교시</option>`;
+      });
+      periodSelect.innerHTML = optionsHtml;
+
+      if (currentVal && (currentVal === 'all' || periods.includes(Number(currentVal)))) {
+        periodSelect.value = currentVal;
+      } else {
+        periodSelect.value = 'all';
+      }
+    }
+
+    function populateObsTeacherFilter() {
+      const teacherSelect = document.getElementById('obsFilterTeacher');
+      if (!teacherSelect) return;
+
+      const currentVal = teacherSelect.value;
+      const teacherSet = new Set();
+
+      observationsList.forEach(item => {
+        if (item.teacher && item.teacher.trim()) {
+          teacherSet.add(item.teacher.trim());
+        }
+      });
+
+      Object.values(classSchedules).forEach(sched => {
+        if (sched.teacher && sched.teacher.trim()) {
+          teacherSet.add(sched.teacher.trim());
+        }
+      });
+
+      const teachers = Array.from(teacherSet).sort((a, b) => a.localeCompare(b, 'ko'));
+
+      let optionsHtml = '<option value="all">전체 교사</option>';
+      teachers.forEach(t => {
+        optionsHtml += `<option value="${escapeHtml(t)}">${escapeHtml(t)} 선생님</option>`;
+      });
+      teacherSelect.innerHTML = optionsHtml;
+
+      if (currentVal && (currentVal === 'all' || teachers.includes(currentVal))) {
+        teacherSelect.value = currentVal;
+      } else {
+        teacherSelect.value = 'all';
+      }
+    }
+
+    function resetObsFilters() {
+      const gradeEl = document.getElementById('obsFilterGrade');
+      const periodEl = document.getElementById('obsFilterPeriod');
+      const teacherEl = document.getElementById('obsFilterTeacher');
+      const searchEl = document.getElementById('obsSearchKeyword');
+
+      if (gradeEl) gradeEl.value = 'all';
+      populateObsClassFilter();
+      populateObsPeriodFilter();
+      const classEl = document.getElementById('obsFilterClass');
+      if (classEl) classEl.value = 'all';
+      if (periodEl) periodEl.value = 'all';
+      if (teacherEl) teacherEl.value = 'all';
+      if (searchEl) searchEl.value = '';
+
+      renderAdminObservations();
+      showToast('🔄 참관록 필터가 초기화되었습니다.');
+    }
+
+    function getFilteredObservations() {
+      // 뷰 모드에 따라 유효한 필터만 적용 (반별 모아보기에서는 교사 필터 제외, 교사별 모아보기에서는 학년/반/교시 필터 제외)
+      const gradeFilter = (currentObsViewMode === 'teacher') ? 'all' : (document.getElementById('obsFilterGrade')?.value || 'all');
+      const classFilter = (currentObsViewMode === 'teacher') ? 'all' : (document.getElementById('obsFilterClass')?.value || 'all');
+      const periodFilter = (currentObsViewMode === 'teacher') ? 'all' : (document.getElementById('obsFilterPeriod')?.value || 'all');
+      const teacherFilter = (currentObsViewMode === 'class') ? 'all' : (document.getElementById('obsFilterTeacher')?.value || 'all');
+      const searchKeyword = (document.getElementById('obsSearchKeyword')?.value || '').trim().toLowerCase();
+
+      return observationsList.filter(item => {
+        if (gradeFilter !== 'all' && Number(item.grade) !== Number(gradeFilter)) return false;
+        if (classFilter !== 'all' && Number(item.classNum) !== Number(classFilter)) return false;
+        if (periodFilter !== 'all' && Number(item.period) !== Number(periodFilter)) return false;
+        if (teacherFilter !== 'all' && (item.teacher || '').trim() !== teacherFilter) return false;
+        if (searchKeyword) {
+          const matchTarget = `${item.grade}학년 ${item.classNum}반 ${item.period}교시 ${item.subject || ''} ${item.teacher || ''} ${item.content || ''}`.toLowerCase();
+          if (!matchTarget.includes(searchKeyword)) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderAdminObservations() {
+      const countSpan = document.getElementById('adminObsCount');
+      const filterBadge = document.getElementById('adminObsFilteredBadge');
+      const filterCountSpan = document.getElementById('adminObsFilteredCount');
+
+      const listContainer = document.getElementById('obsViewListContainer');
+      const classContainer = document.getElementById('obsViewClassContainer');
+      const teacherContainer = document.getElementById('obsViewTeacherContainer');
+
+      if (!listContainer || !classContainer || !teacherContainer) return;
+
+      const gradeFilter = (currentObsViewMode === 'teacher') ? 'all' : (document.getElementById('obsFilterGrade')?.value || 'all');
+      const classFilter = (currentObsViewMode === 'teacher') ? 'all' : (document.getElementById('obsFilterClass')?.value || 'all');
+      const periodFilter = (currentObsViewMode === 'teacher') ? 'all' : (document.getElementById('obsFilterPeriod')?.value || 'all');
+      const teacherFilter = (currentObsViewMode === 'class') ? 'all' : (document.getElementById('obsFilterTeacher')?.value || 'all');
+      const searchKeyword = (document.getElementById('obsSearchKeyword')?.value || '').trim();
+
+      const isFilterActive = (gradeFilter !== 'all' || classFilter !== 'all' || periodFilter !== 'all' || teacherFilter !== 'all' || searchKeyword !== '');
+
+      const filtered = getFilteredObservations();
+
+      if (countSpan) countSpan.textContent = observationsList.length;
+      if (filterBadge && filterCountSpan) {
+        if (isFilterActive) {
+          filterBadge.style.display = 'inline-block';
+          filterCountSpan.textContent = filtered.length;
+        } else {
+          filterBadge.style.display = 'none';
+        }
+      }
+
+      // 모드별 컨테이너 표시 제어
+      listContainer.style.display = currentObsViewMode === 'list' ? 'block' : 'none';
+      classContainer.style.display = currentObsViewMode === 'class' ? 'block' : 'none';
+      teacherContainer.style.display = currentObsViewMode === 'teacher' ? 'block' : 'none';
+
+      // 1. 전체 목록 테이블 뷰 (요청 1: 기본적으로 보이는 데이터는 학년 / 반 / 교시순으로 sort)
+      if (currentObsViewMode === 'list') {
+        const tbody = document.getElementById('adminObsTableBody');
+        if (!tbody) return;
+
+        if (filtered.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 36px 16px;">${isFilterActive ? '조건에 일치하는 참관록이 없습니다. 필터를 조정해보세요.' : '아직 제출된 참관록이 없습니다.'}</td></tr>`;
+          return;
+        }
+
+        // 학년(오름차순) -> 반(오름차순) -> 교시(오름차순) -> 접수일시 순 정렬
+        const sortedList = [...filtered].sort((a, b) => {
+          const gA = Number(a.grade) || 0;
+          const gB = Number(b.grade) || 0;
+          if (gA !== gB) return gA - gB;
+
+          const cA = Number(a.classNum) || 0;
+          const cB = Number(b.classNum) || 0;
+          if (cA !== cB) return cA - cB;
+
+          const pA = Number(a.period) || 0;
+          const pB = Number(b.period) || 0;
+          if (pA !== pB) return pA - pB;
+
+          return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+        });
+
+        let html = '';
+        sortedList.forEach(item => {
+          html += `
+            <tr>
+              <td style="white-space: nowrap; font-size: 11px; color: var(--text-muted);">${item.createdAt || '-'}</td>
+              <td><strong>${item.grade}학년 ${item.classNum}반 ${item.period}교시</strong></td>
+              <td>
+                <span style="font-weight: 700; color: var(--primary);">${escapeHtml(item.subject || '-')}</span><br>
+                <span style="font-size: 12px; color: var(--text-muted);">담당: ${escapeHtml(item.teacher || '-')} 선생님</span>
+              </td>
+              <td style="max-width: 320px; word-break: break-all; white-space: pre-wrap; line-height: 1.5;">${escapeHtml(item.content)}</td>
+              <td>
+                <button type="button" class="btn-nav btn-nav-danger" style="padding: 3px 8px; font-size: 11px;" onclick="deleteObservationItem('${item.id}')">
+                  삭제
+                </button>
+              </td>
+            </tr>
+          `;
+        });
+        tbody.innerHTML = html;
         return;
       }
 
-      let html = '';
-      filtered.forEach(item => {
-        html += `
-          <tr>
-            <td style="white-space: nowrap; font-size: 11px; color: var(--text-muted);">${item.createdAt || '-'}</td>
-            <td><strong>${item.grade}학년 ${item.classNum}반 ${item.period}교시</strong></td>
-            <td><strong>${escapeHtml(item.subject || '-')}</strong><br><span style="font-size: 12px; color: var(--text-muted);">${escapeHtml(item.teacher || '-')}</span></td>
-            <td style="max-width: 320px; word-break: break-all; white-space: pre-wrap; line-height: 1.5;">${escapeHtml(item.content)}</td>
-            <td>
-              <button type="button" class="btn-nav btn-nav-danger" style="padding: 3px 8px; font-size: 11px;" onclick="deleteObservationItem('${item.id}')">
-                삭제
-              </button>
-            </td>
-          </tr>
-        `;
-      });
-      tbody.innerHTML = html;
+      // 2. 반별 모아보기 뷰
+      if (currentObsViewMode === 'class') {
+        if (filtered.length === 0) {
+          classContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px 20px; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md);">${isFilterActive ? '조건에 일치하는 반별 참관록이 없습니다.' : '아직 접수된 참관록이 없습니다.'}</div>`;
+          return;
+        }
+
+        // 학년/반별 그룹핑
+        const classGroups = {};
+        filtered.forEach(item => {
+          const groupKey = `${item.grade}_${item.classNum}`;
+          if (!classGroups[groupKey]) {
+            classGroups[groupKey] = {
+              grade: item.grade,
+              classNum: item.classNum,
+              items: []
+            };
+          }
+          classGroups[groupKey].items.push(item);
+        });
+
+        // 학년 및 반 오름차순 정렬
+        const sortedKeys = Object.keys(classGroups).sort((a, b) => {
+          const [gA, cA] = a.split('_').map(Number);
+          const [gB, cB] = b.split('_').map(Number);
+          if (gA !== gB) return gA - gB;
+          return cA - cB;
+        });
+
+        let groupHtml = '';
+        sortedKeys.forEach(key => {
+          const group = classGroups[key];
+          group.items.sort((a, b) => {
+            const pDiff = (Number(a.period) || 0) - (Number(b.period) || 0);
+            if (pDiff !== 0) return pDiff;
+            return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+          });
+          const subjects = Array.from(new Set(group.items.map(i => `${i.period}교시 ${i.subject}(${i.teacher})`))).join(', ');
+
+          groupHtml += `
+            <div class="obs-group-card">
+              <div class="obs-group-card-header">
+                <div class="obs-group-title">
+                  <span>🏫 ${group.grade}학년 ${group.classNum}반</span>
+                  <span class="obs-group-badge">참관록 ${group.items.length}건 접수</span>
+                </div>
+                <div style="font-size: 12.5px; color: var(--text-muted); display: flex; align-items: center; gap: 6px;">
+                  <span>참관 수업:</span>
+                  <strong style="color: var(--text-main);">${escapeHtml(subjects)}</strong>
+                </div>
+              </div>
+              <div class="obs-group-body">
+          `;
+
+          group.items.forEach(item => {
+            groupHtml += `
+              <div class="obs-item-card">
+                <div class="obs-item-meta">
+                  <div class="obs-item-tags">
+                    <span style="background: #ecfdf5; color: #047857; font-weight: 700; font-size: 11.5px; padding: 2px 8px; border-radius: 4px; border: 1px solid #a7f3d0;">
+                      ${item.period}교시
+                    </span>
+                    <span style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">
+                      ${escapeHtml(item.subject || '-')}
+                    </span>
+                    <span style="font-size: 12px; color: var(--text-muted);">
+                      (담당: ${escapeHtml(item.teacher || '-')} 선생님)
+                    </span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 11px; color: var(--text-muted);">${item.createdAt || '-'}</span>
+                    <button type="button" class="btn-nav btn-nav-danger" style="padding: 2px 7px; font-size: 11px;" onclick="deleteObservationItem('${item.id}')">
+                      삭제
+                    </button>
+                  </div>
+                </div>
+                <div class="obs-item-text">${escapeHtml(item.content)}</div>
+              </div>
+            `;
+          });
+
+          groupHtml += `
+              </div>
+            </div>
+          `;
+        });
+
+        classContainer.innerHTML = groupHtml;
+        return;
+      }
+
+      // 3. 교사별 모아보기 뷰
+      if (currentObsViewMode === 'teacher') {
+        if (filtered.length === 0) {
+          teacherContainer.innerHTML = `<div style="text-align: center; color: var(--text-muted); padding: 40px 20px; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md);">${isFilterActive ? '조건에 일치하는 교사별 참관록이 없습니다.' : '아직 접수된 참관록이 없습니다.'}</div>`;
+          return;
+        }
+
+        // 교사별 그룹핑
+        const teacherGroups = {};
+        filtered.forEach(item => {
+          const tName = (item.teacher || '선생님').trim();
+          if (!teacherGroups[tName]) {
+            teacherGroups[tName] = {
+              teacher: tName,
+              items: []
+            };
+          }
+          teacherGroups[tName].items.push(item);
+        });
+
+        // 교사명 가나다순 정렬
+        const sortedTeachers = Object.keys(teacherGroups).sort((a, b) => a.localeCompare(b, 'ko'));
+
+        let groupHtml = '';
+        sortedTeachers.forEach(tName => {
+          const group = teacherGroups[tName];
+          // 담당 교사 내에서는 학년 오름차순, 반 오름차순, 교시 오름차순 정렬
+          group.items.sort((a, b) => {
+            const gDiff = (Number(a.grade) || 0) - (Number(b.grade) || 0);
+            if (gDiff !== 0) return gDiff;
+            const cDiff = (Number(a.classNum) || 0) - (Number(b.classNum) || 0);
+            if (cDiff !== 0) return cDiff;
+            const pDiff = (Number(a.period) || 0) - (Number(b.period) || 0);
+            if (pDiff !== 0) return pDiff;
+            return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+          });
+          const classList = Array.from(new Set(group.items.map(i => `${i.grade}학년 ${i.classNum}반(${i.period}교시 ${i.subject})`))).join(', ');
+
+          groupHtml += `
+            <div class="obs-group-card">
+              <div class="obs-group-card-header" style="background: #fffbeb; border-bottom: 1px solid #fde68a;">
+                <div class="obs-group-title">
+                  <span style="color: #92400e;">👩‍🏫 ${escapeHtml(tName)} 선생님</span>
+                  <span class="obs-group-badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fcd34d;">
+                    총 ${group.items.length}건의 참관 소감
+                  </span>
+                </div>
+                <div style="font-size: 12.5px; color: #78350f; display: flex; align-items: center; gap: 6px;">
+                  <span>참관 학급:</span>
+                  <strong>${escapeHtml(classList)}</strong>
+                </div>
+              </div>
+              <div class="obs-group-body">
+          `;
+
+          group.items.forEach(item => {
+            groupHtml += `
+              <div class="obs-item-card" style="border-left-color: #f59e0b;">
+                <div class="obs-item-meta">
+                  <div class="obs-item-tags">
+                    <span style="background: #eff6ff; color: #1d4ed8; font-weight: 700; font-size: 11.5px; padding: 2px 8px; border-radius: 4px; border: 1px solid #bfdbfe;">
+                      ${item.grade}학년 ${item.classNum}반 ${item.period}교시
+                    </span>
+                    <span style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">
+                      교과: ${escapeHtml(item.subject || '-')}
+                    </span>
+                  </div>
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 11px; color: var(--text-muted);">${item.createdAt || '-'}</span>
+                    <button type="button" class="btn-nav btn-nav-danger" style="padding: 2px 7px; font-size: 11px;" onclick="deleteObservationItem('${item.id}')">
+                      삭제
+                    </button>
+                  </div>
+                </div>
+                <div class="obs-item-text">${escapeHtml(item.content)}</div>
+              </div>
+            `;
+          });
+
+          groupHtml += `
+              </div>
+            </div>
+          `;
+        });
+
+        teacherContainer.innerHTML = groupHtml;
+      }
     }
 
     async function deleteObservationItem(id) {
@@ -2343,6 +3225,7 @@
         }
       }
 
+      populateObsTeacherFilter();
       renderAdminObservations();
       showToast('참관록이 삭제되었습니다.');
     }
@@ -2398,22 +3281,40 @@
         }
       }
 
+      populateObsTeacherFilter();
       renderAdminObservations();
       closeClearObsModal();
       showToast('🗑️ 모든 참관록이 삭제되었습니다.');
     }
 
-    // CSV 파일 다운로드
+    // CSV 파일 다운로드 (현재 필터 조건 반영)
     function downloadObservationsCSV() {
-      if (observationsList.length === 0) {
+      let exportList = getFilteredObservations();
+      if (exportList.length === 0) {
         showToast('⚠️ 내보낼 참관록 데이터가 없습니다.');
         return;
+      }
+
+      // 전체목록 모드일 경우 학년/반/교시순 정렬 반영
+      if (currentObsViewMode === 'list') {
+        exportList = [...exportList].sort((a, b) => {
+          const gA = Number(a.grade) || 0;
+          const gB = Number(b.grade) || 0;
+          if (gA !== gB) return gA - gB;
+          const cA = Number(a.classNum) || 0;
+          const cB = Number(b.classNum) || 0;
+          if (cA !== cB) return cA - cB;
+          const pA = Number(a.period) || 0;
+          const pB = Number(b.period) || 0;
+          if (pA !== pB) return pA - pB;
+          return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+        });
       }
 
       let csv = '\uFEFF'; // Excel 한글 깨짐 방지 BOM
       csv += '접수일시,학년,반,교시,수업교과목,담당교사,참관소감및의견\n';
 
-      observationsList.forEach(item => {
+      exportList.forEach(item => {
         const cleanContent = (item.content || '').replace(/"/g, '""').replace(/\n/g, ' ');
         csv += `"${item.createdAt}","${item.grade}학년","${item.classNum}반","${item.period}교시","${item.subject}","${item.teacher}","${cleanContent}"\n`;
       });
@@ -2425,7 +3326,7 @@
       a.download = `${schoolInfo.schoolName}_공개수업_참관록_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(url);
-      showToast('📥 참관록 엑셀(CSV) 파일이 다운로드되었습니다.');
+      showToast(`📥 참관록 ${exportList.length}건이 엑셀(CSV) 파일로 다운로드되었습니다.`);
     }
 
     /**
@@ -2540,10 +3441,35 @@
       classSchedules[scheduleKey] = scheduleData;
       localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
 
+      // 등록된 교시가 현재 운영 교시에 없으면 자동으로 추가
+      if (!ACTIVE_PERIODS.includes(period)) {
+        ACTIVE_PERIODS.push(period);
+        ACTIVE_PERIODS.sort((a, b) => a - b);
+        localStorage.setItem(STORAGE_KEY_ACTIVE_PERIODS, JSON.stringify(ACTIVE_PERIODS));
+        if (isFirebaseReady && db) {
+          db.collection('settings').doc('active_periods').set({
+            periods: ACTIVE_PERIODS,
+            updatedAt: new Date().toISOString()
+          }).catch(e => console.warn('운영 교시 Firestore 동기화 오류:', e));
+        }
+        applyActivePeriodsToUI();
+      }
+
       renderAdminScheduleList();
+      populateObsPeriodFilter();
       updateClassInfoDisplay();
       cancelScheduleEdit();
-      showToast(`⚡ [${grade}학년 ${classNum}반 ${period}교시] ${subject}(${teacher}) 저장 완료!`);
+
+      // 저장 완료 메시지 표시 (요청 4: 수업정보 저장하기 버튼을 누르면 저장했다는 메세지를 보여줘)
+      const saveAlert = document.getElementById('scheduleSaveSuccessAlert');
+      if (saveAlert) {
+        saveAlert.innerHTML = `💾 <strong>[${grade}학년 ${classNum}반 ${period}교시]</strong> 수업 정보 (<strong>${escapeHtml(subject)}</strong> / <strong>${escapeHtml(teacher)}</strong>) 저장이 완료되었습니다!`;
+        saveAlert.style.display = 'block';
+        setTimeout(() => {
+          if (saveAlert) saveAlert.style.display = 'none';
+        }, 5000);
+      }
+      showToast(`💾 [${grade}학년 ${classNum}반 ${period}교시] 수업정보가 성공적으로 저장되었습니다!`);
 
       // 2. 백그라운드 클라우드 Firestore 비동기 저장 (화면 멈춤 없음)
       if (isFirebaseReady && db) {
@@ -2562,6 +3488,7 @@
       localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
 
       renderAdminScheduleList();
+      populateObsPeriodFilter();
       updateClassInfoDisplay();
       showToast('수업 정보가 삭제되었습니다.');
 
@@ -2618,6 +3545,7 @@
       }
 
       renderAdminScheduleList();
+      populateObsPeriodFilter();
       updateClassInfoDisplay();
       cancelScheduleEdit();
       closeResetScheduleModal();
@@ -2647,6 +3575,7 @@
       }
 
       renderAdminScheduleList();
+      populateObsPeriodFilter();
       updateClassInfoDisplay();
       showToast('⚡ 전체 학년·반 기본 표준 시간표가 등록되었습니다!');
     }
@@ -2786,17 +3715,14 @@
 
       // 1. 헤더 행(Header Row) 찾기 (0행부터 최대 10행까지 탐색)
       let headerRowIdx = -1;
-      let isWideFormat = false; // 2교시, 3교시가 가로 컬럼으로 배치된 양식
+      let isWideFormat = false; // 2교시, 3교시 등 가로 컬럼으로 배치된 양식
       let colMap = {
         grade: -1,
         classNum: -1,
         period: -1,
         subject: -1,
         teacher: -1,
-        period2Sub: -1,
-        period2Teacher: -1,
-        period3Sub: -1,
-        period3Teacher: -1
+        widePeriods: {}
       };
 
       for (let r = 0; r < Math.min(10, rawRows.length); r++) {
@@ -2804,6 +3730,8 @@
         if (!Array.isArray(row)) continue;
 
         let foundKeywords = 0;
+        const currentWidePeriods = {};
+
         row.forEach((cell, cIdx) => {
           const c = cleanHeaderStr(cell);
           if (c.includes('학년')) { colMap.grade = cIdx; foundKeywords++; }
@@ -2812,15 +3740,20 @@
           if (c.includes('과목') || c.includes('교과')) { colMap.subject = cIdx; foundKeywords++; }
           if (c.includes('교사') || c.includes('선생님') || c.includes('담당') || c.includes('수업자')) { colMap.teacher = cIdx; foundKeywords++; }
 
-          // 가로형 양식 확인 (2교시 과목, 2교시 교사 등)
-          if (c.includes('2교시') && (c.includes('과목') || c.includes('교과'))) colMap.period2Sub = cIdx;
-          if (c.includes('2교시') && (c.includes('교사') || c.includes('선생님') || c.includes('담당'))) colMap.period2Teacher = cIdx;
-          if (c.includes('3교시') && (c.includes('과목') || c.includes('교과'))) colMap.period3Sub = cIdx;
-          if (c.includes('3교시') && (c.includes('교사') || c.includes('선생님') || c.includes('담당'))) colMap.period3Teacher = cIdx;
+          // 가로형 양식 확인 (예: 1교시 과목, 2교시 교사, 3교시 과목, 4교시 교사 등)
+          const pMatch = c.match(/([1-9]|1[0-2])\s*교시/);
+          if (pMatch) {
+            const pNum = Number(pMatch[1]);
+            if (!currentWidePeriods[pNum]) currentWidePeriods[pNum] = { subCol: -1, teaCol: -1 };
+            if (c.includes('과목') || c.includes('교과')) currentWidePeriods[pNum].subCol = cIdx;
+            if (c.includes('교사') || c.includes('선생님') || c.includes('담당') || c.includes('수업자')) currentWidePeriods[pNum].teaCol = cIdx;
+          }
         });
 
-        if (colMap.period2Sub !== -1 && colMap.period3Sub !== -1) {
+        const wideFound = Object.values(currentWidePeriods).filter(p => p.subCol !== -1);
+        if (wideFound.length >= 2) {
           isWideFormat = true;
+          colMap.widePeriods = currentWidePeriods;
           headerRowIdx = r;
           break;
         }
@@ -2852,53 +3785,39 @@
         const gradeVal = parseExcelNumber(row[colMap.grade]);
         const classVal = parseExcelNumber(row[colMap.classNum]);
 
-        if (isWideFormat) {
-          // 2교시 데이터
-          const sub2 = String(row[colMap.period2Sub] || '').trim();
-          let tea2 = String(row[colMap.period2Teacher] || '').trim();
-          if (tea2 && !tea2.includes('선생님') && tea2.length <= 4) tea2 = `${tea2} 선생님`;
+        if (isWideFormat && colMap.widePeriods && Object.keys(colMap.widePeriods).length > 0) {
+          const sortedPeriods = Object.keys(colMap.widePeriods).map(Number).sort((a, b) => a - b);
+          sortedPeriods.forEach(pNum => {
+            const pCols = colMap.widePeriods[pNum];
+            const sub = String(pCols.subCol !== -1 ? row[pCols.subCol] || '' : '').trim();
+            let tea = String(pCols.teaCol !== -1 ? row[pCols.teaCol] || '' : '').trim();
+            if (tea && !tea.includes('선생님') && tea.length <= 4) tea = `${tea} 선생님`;
 
-          if (gradeVal || classVal || sub2) {
-            const v2 = Boolean(gradeVal && gradeVal >= 1 && gradeVal <= 3 && classVal && classVal >= 1 && sub2 && tea2);
-            parsedExcelData.push({
-              rowNum: r + 1,
-              grade: gradeVal || 1,
-              classNum: classVal || 1,
-              period: 2,
-              subject: sub2 || '미입력',
-              teacher: tea2 || '미입력',
-              valid: v2,
-              reason: v2 ? '' : '필수 정보 확인 필요'
-            });
-          }
-
-          // 3교시 데이터
-          const sub3 = String(row[colMap.period3Sub] || '').trim();
-          let tea3 = String(row[colMap.period3Teacher] || '').trim();
-          if (tea3 && !tea3.includes('선생님') && tea3.length <= 4) tea3 = `${tea3} 선생님`;
-
-          if (gradeVal || classVal || sub3) {
-            const v3 = Boolean(gradeVal && gradeVal >= 1 && gradeVal <= 3 && classVal && classVal >= 1 && sub3 && tea3);
-            parsedExcelData.push({
-              rowNum: r + 1,
-              grade: gradeVal || 1,
-              classNum: classVal || 1,
-              period: 3,
-              subject: sub3 || '미입력',
-              teacher: tea3 || '미입력',
-              valid: v3,
-              reason: v3 ? '' : '필수 정보 확인 필요'
-            });
-          }
+            if (sub || tea || (gradeVal && classVal)) {
+              const v = Boolean(gradeVal && gradeVal >= 1 && gradeVal <= 3 && classVal && classVal >= 1 && sub && tea);
+              parsedExcelData.push({
+                rowNum: r + 1,
+                grade: gradeVal || 1,
+                classNum: classVal || 1,
+                period: pNum,
+                subject: sub || '미입력',
+                teacher: tea || '미입력',
+                valid: v,
+                reason: v ? '' : '필수 정보 확인 필요'
+              });
+            }
+          });
         } else {
-          // 표준 단일 열 양식
+          // 표준 단일 열 양식 (1~12교시 유연 지원)
           let periodVal = parseExcelNumber(row[colMap.period]);
-          if (!periodVal || (periodVal !== 2 && periodVal !== 3)) {
-            // 2교시나 3교시로 명시되지 않은 경우 row 텍스트 검사
+          if (!periodVal || periodVal < 1 || periodVal > 12) {
             const rowStr = row.join(' ');
-            if (rowStr.includes('2교시')) periodVal = 2;
-            else if (rowStr.includes('3교시')) periodVal = 3;
-            else periodVal = 2; // 기본값
+            const match = rowStr.match(/([1-9]|1[0-2])\s*교시/);
+            if (match) {
+              periodVal = Number(match[1]);
+            } else {
+              periodVal = ACTIVE_PERIODS[0] || 2;
+            }
           }
 
           const subject = String(row[colMap.subject] || '').trim();
@@ -2910,7 +3829,7 @@
           const isValid = Boolean(
             gradeVal && gradeVal >= 1 && gradeVal <= 3 &&
             classVal && classVal >= 1 &&
-            periodVal && (periodVal === 2 || periodVal === 3) &&
+            periodVal && periodVal >= 1 && periodVal <= 12 &&
             subject &&
             teacher
           );
@@ -2920,6 +3839,7 @@
             const missing = [];
             if (!gradeVal || gradeVal < 1 || gradeVal > 3) missing.push('학년(1~3)');
             if (!classVal || classVal < 1) missing.push('반');
+            if (!periodVal || periodVal < 1 || periodVal > 12) missing.push('교시(1~12)');
             if (!subject) missing.push('과목');
             if (!teacher) missing.push('교사');
             reason = missing.join(', ') + ' 확인';
@@ -2929,7 +3849,7 @@
             rowNum: r + 1,
             grade: gradeVal || '미입력',
             classNum: classVal || '미입력',
-            period: periodVal || 2,
+            period: periodVal || (ACTIVE_PERIODS[0] || 2),
             subject: subject || '미입력',
             teacher: teacher || '미입력',
             valid: isValid,
@@ -2954,6 +3874,15 @@
       const validCount = parsedExcelData.filter(d => d.valid).length;
       if (countSpan) countSpan.textContent = parsedExcelData.length;
       if (validSpan) validSpan.textContent = validCount;
+
+      // 버튼 상태 정상화 (요청 5: 처음부터 '반영중'으로 떠있는 현상 방지)
+      const btn = document.getElementById('applyExcelBtn');
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = '✅ 시스템에 일괄 반영하기';
+      }
+      const successNotice = document.getElementById('excelApplySuccessMsg');
+      if (successNotice) successNotice.style.display = 'none';
 
       let html = '';
       parsedExcelData.forEach(item => {
@@ -2996,6 +3925,7 @@
       try {
         localStorage.removeItem('open_class_schedule_user_cleared');
         let maxClassesUpdated = false;
+        let periodsUpdated = false;
 
         // 1. 중복 키 제거 및 정규화
         const uniqueItems = {};
@@ -3026,6 +3956,12 @@
             GRADE_CLASS_COUNTS[g] = c;
             maxClassesUpdated = true;
           }
+
+          // 업로드된 교시가 현재 운영 교시에 없으면 자동으로 운영 교시 확장
+          if (!ACTIVE_PERIODS.includes(p)) {
+            ACTIVE_PERIODS.push(p);
+            periodsUpdated = true;
+          }
         });
 
         // 2. 즉시 로컬 상태 및 UI 반영 (0ms 지연)
@@ -3042,13 +3978,33 @@
           }
         }
 
+        if (periodsUpdated) {
+          ACTIVE_PERIODS.sort((a, b) => a - b);
+          localStorage.setItem(STORAGE_KEY_ACTIVE_PERIODS, JSON.stringify(ACTIVE_PERIODS));
+          applyActivePeriodsToUI();
+          if (isFirebaseReady && db) {
+            db.collection('settings').doc('active_periods').set({
+              periods: ACTIVE_PERIODS,
+              updatedAt: new Date().toISOString()
+            }).catch(e => console.warn('운영 교시 저장 비동기:', e));
+          }
+        }
+
         localStorage.setItem(STORAGE_KEY_CLASSES, JSON.stringify(classSchedules));
 
         renderAdminScheduleList();
+        populateObsPeriodFilter();
         updateClassInfoDisplay();
 
         const countApplied = Object.keys(uniqueItems).length;
-        showToast(`🎉 총 ${countApplied}개의 수업 정보가 즉시 반영되었습니다!`);
+
+        // 반영 완료 메시지 표시 (요청 5: 반영을 다 했으면 반영했다는 메세지도 보여주기)
+        const successNotice = document.getElementById('excelApplySuccessMsg');
+        if (successNotice) {
+          successNotice.innerHTML = `🎉 <strong>엑셀 수업 시간표 총 ${countApplied}건이 시스템에 성공적으로 반영되었습니다!</strong><br><span style="font-size: 12px; font-weight: normal; color: #15803d;">하단 [등록된 수업 정보 목록]에서 반영된 시간표를 확인 및 수정하실 수 있습니다.</span>`;
+          successNotice.style.display = 'block';
+        }
+        showToast(`🎉 엑셀 시간표 총 ${countApplied}건이 성공적으로 반영되었습니다!`);
 
         // 3. 백그라운드 클라우드 Firestore 동기화 (UI 블로킹 방지)
         if (isFirebaseReady && db) {
@@ -3088,16 +4044,33 @@
 
     // 엑셀 템플릿 다운로드 기능
     function downloadExcelTemplate() {
-      const sampleData = [
-        { 학년: 1, 반: 1, 교시: 2, 교과목: '국어', 담당교사: '김하늘 선생님' },
-        { 학년: 1, 반: 1, 교시: 3, 교과목: '수학', 담당교사: '최진수 선생님' },
-        { 학년: 1, 반: 2, 교시: 2, 교과목: '영어', 담당교사: '이지은 선생님' },
-        { 학년: 1, 반: 2, 교시: 3, 교과목: '과학', 담당교사: '한지민 선생님' },
-        { 학년: 2, 반: 1, 교시: 2, 교과목: '역사', 담당교사: '서동욱 선생님' },
-        { 학년: 2, 반: 1, 교시: 3, 교과목: '사회', 담당교사: '유진아 선생님' },
-        { 학년: 3, 반: 1, 교시: 2, 교과목: '음악', 담당교사: '조은별 선생님' },
-        { 학년: 3, 반: 1, 교시: 3, 교과목: '미술', 담당교사: '차선우 선생님' }
+      const periodsToUse = (ACTIVE_PERIODS && ACTIVE_PERIODS.length > 0) ? ACTIVE_PERIODS : [2, 3];
+      const sampleSubjects = [
+        { sub: '국어', tea: '김하늘 선생님' },
+        { sub: '수학', tea: '최진수 선생님' },
+        { sub: '영어', tea: '이지은 선생님' },
+        { sub: '과학', tea: '한지민 선생님' },
+        { sub: '역사', tea: '서동욱 선생님' },
+        { sub: '사회', tea: '유진아 선생님' },
+        { sub: '음악', tea: '조은별 선생님' },
+        { sub: '미술', tea: '차선우 선생님' }
       ];
+
+      const sampleData = [];
+      [1, 2, 3].forEach(g => {
+        [1, 2].forEach(c => {
+          periodsToUse.forEach((p, pIdx) => {
+            const item = sampleSubjects[(g * 2 + c + pIdx) % sampleSubjects.length];
+            sampleData.push({
+              학년: g,
+              반: c,
+              교시: p,
+              교과목: item.sub,
+              담당교사: item.tea
+            });
+          });
+        });
+      });
 
       const ws = XLSX.utils.json_to_sheet(sampleData);
       const wb = XLSX.utils.book_new();
@@ -3155,11 +4128,11 @@
      * ==============================================================================
      */
     function openFirebaseGuideModal() {
-      document.getElementById('firebaseGuideModal').classList.add('active');
+      document.getElementById('firebaseGuideModal')?.classList.add('active');
     }
 
     function closeFirebaseGuideModal() {
-      document.getElementById('firebaseGuideModal').classList.remove('active');
+      document.getElementById('firebaseGuideModal')?.classList.remove('active');
     }
 
     function openCloudflareGuideModal() {
