@@ -17,6 +17,18 @@
   <!-- SheetJS (xlsx) CDN: 엑셀 파일(.xlsx, .xls) 일괄 업로드 및 템플릿 다운로드 -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
+  <!-- html2canvas & jsPDF: 참관록 화면에 보이는 그대로 고화질 PDF 내보내기 -->
+  <script src="/html2canvas.min.js"></script>
+  <script src="/jspdf.umd.min.js"></script>
+  <script>
+    if (typeof html2canvas === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"><\/script>');
+    }
+    if (typeof jspdf === 'undefined' && typeof jsPDF === 'undefined') {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"><\/script>');
+    }
+  </script>
+
   <!-- Google Fonts & Pretendard Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -921,9 +933,22 @@
     /* Print Styles */
     @media print {
       body {
-        background-color: #fff;
+        background-color: #fff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
       }
-      .top-nav, .btn-group, .btn-submit, .quick-tags, .modal-close, .modal-footer, .nav-actions, #classButtonsContainer, .obs-mode-selector, #obsSearchKeyword, .form-select, .btn-nav-danger {
+      /* 전용 인쇄 모드 활성화 시 인쇄 영역만 정확하게 출력 */
+      body.is-printing-obs > *:not(#obsPrintRenderArea) {
+        display: none !important;
+      }
+      body.is-printing-obs #obsPrintRenderArea {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .top-nav, .btn-group, .btn-submit, .quick-tags, .modal-close, .modal-footer, .nav-actions, #classButtonsContainer, .obs-mode-selector, #obsSearchKeyword, .form-select, .btn-nav-danger, .modal-overlay:not(#obsPrintPreviewModal) {
         display: none !important;
       }
       .container {
@@ -932,16 +957,20 @@
       }
       .card {
         box-shadow: none;
-        border: 1px solid #ccc;
+        border: 1px solid #cbd5e1;
         break-inside: avoid;
       }
       .admin-table-container, #obsViewListContainer, #obsViewClassContainer, #obsViewTeacherContainer {
         max-height: none !important;
         overflow: visible !important;
       }
-      .obs-group-card, .obs-item-card {
+      .obs-group-card, .obs-item-card, tr {
         break-inside: avoid;
         page-break-inside: avoid;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 12mm 10mm;
       }
     }
   </style>
@@ -1016,7 +1045,7 @@
         <div class="card-title">
           <span class="step-number">3</span>
           <span>교시 선택</span>
-          <span class="step-hint" id="periodSelectionHint">참관하실 교시를 선택해주세요</span>
+          <span class="step-hint" id="periodSelectionHint">참관하신 교시를 선택해주세요</span>
         </div>
         <div class="btn-group period-group" id="parentPeriodButtonGroup">
           <button type="button" class="select-btn" data-period="2" onclick="selectPeriod(2)">
@@ -1219,10 +1248,13 @@
                 </div>
               </div>
               <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-                <button type="button" class="btn-nav" onclick="downloadObservationsCSV()">
+                <button type="button" class="btn-nav" onclick="downloadObservationsCSV()" title="현재 참관록 데이터를 엑셀(CSV) 파일로 저장합니다.">
                   📥 엑셀(CSV) 다운로드
                 </button>
-                <button type="button" class="btn-nav" onclick="window.print()">
+                <button type="button" class="btn-nav btn-nav-primary" style="background: #2563eb; color: #ffffff; border-color: #1d4ed8; font-weight: 700;" onclick="downloadObservationsPDF()" title="현재 화면에 보이는 그대로 PDF 문서로 즉시 다운로드합니다.">
+                  📄 PDF 다운로드
+                </button>
+                <button type="button" class="btn-nav" style="font-weight: 600;" onclick="triggerObservationsPrint()" title="현재 화면에 보이는 참관록을 인쇄하거나 인쇄 미리보기를 엽니다.">
                   🖨️ 인쇄
                 </button>
                 <button type="button" class="btn-nav btn-nav-danger" onclick="clearAllObservations()">
@@ -1684,6 +1716,63 @@
     </div>
   </div>
 
+  <!-- 모달: 참관록 인쇄 및 PDF 미리보기 / 내보내기 모달 -->
+  <div id="obsPrintPreviewModal" class="modal-overlay" style="z-index: 1200;">
+    <div class="modal-box" style="max-width: 920px; width: 95%; max-height: 92vh; display: flex; flex-direction: column;">
+      <div class="modal-header" style="background-color: #f0fdf4; border-bottom: 1.5px solid #bbf7d0; flex-shrink: 0; padding: 14px 20px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <span style="font-size: 24px;">🖨️</span>
+          <div>
+            <h3 class="modal-title" style="color: #166534; font-size: 17px;" id="obsPrintModalTitle">참관록 인쇄 및 PDF 미리보기</h3>
+            <div style="font-size: 12px; color: #15803d;" id="obsPrintModalSubtitle">화면에 보이는 그대로 A4 규격으로 인쇄하거나 PDF로 저장할 수 있습니다.</div>
+          </div>
+        </div>
+        <button type="button" class="modal-close" onclick="closePrintPreviewModal()">&times;</button>
+      </div>
+
+      <div class="modal-body" style="padding: 16px; overflow-y: auto; flex-grow: 1; background: #f8fafc;">
+        <!-- 미리보기 상단 액션 툴바 -->
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; background: #ffffff; padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 10px;">
+          <div style="font-size: 13px; color: var(--text-main);">
+            📌 <strong>인쇄 팁:</strong> 브라우저 설정에 따라 인쇄 대화상자가 바로 뜨지 않을 경우, <strong style="color: #2563eb;">[📄 PDF로 즉시 다운로드]</strong> 또는 <strong style="color: #166534;">[↗️ 새 창에서 열어 인쇄]</strong>를 이용해주세요.
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" class="btn-nav btn-nav-primary" style="background: #2563eb; color: #ffffff; border-color: #1d4ed8; font-weight: 700; padding: 7px 15px; font-size: 13px;" onclick="downloadObservationsPDF()">
+              📄 PDF로 즉시 다운로드
+            </button>
+            <button type="button" class="btn-nav" style="background: #166534; color: #ffffff; border-color: #14532d; font-weight: 700; padding: 7px 15px; font-size: 13px;" onclick="printPreviewDocumentNow(false)">
+              🖨️ 인쇄 창 열기
+            </button>
+            <button type="button" class="btn-nav" style="padding: 7px 13px; font-size: 13px;" onclick="openPrintInNewWindow()">
+              ↗️ 새 창에서 인쇄
+            </button>
+          </div>
+        </div>
+
+        <!-- 실제 A4 규격 미리보기 렌더링 캔버스 -->
+        <div id="obsPrintDocumentContainer" style="background: #ffffff; padding: 28px 24px; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); font-family: 'Pretendard', sans-serif;">
+          <!-- 동적으로 생성된 인쇄 문서 HTML 삽입 -->
+        </div>
+      </div>
+
+      <div class="modal-footer" style="background-color: #ffffff; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0; padding: 12px 20px;">
+        <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);" id="obsPrintSummaryText">총 N건의 참관록</span>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn-nav" onclick="closePrintPreviewModal()">닫기</button>
+          <button type="button" class="btn-nav btn-nav-primary" style="background: #2563eb; color: #ffffff; border-color: #1d4ed8; font-weight: 700;" onclick="downloadObservationsPDF()">
+            📄 PDF 다운로드
+          </button>
+          <button type="button" class="btn-nav btn-nav-primary" style="background: #166534; color: #ffffff; border-color: #14532d; font-weight: 700;" onclick="printPreviewDocumentNow(false)">
+            🖨️ 인쇄하기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 인쇄 전용 렌더링 영역 (window.print 시 A4 전용 출력) -->
+  <div id="obsPrintRenderArea" style="display: none;"></div>
+
   <!-- 토스트 알림 컨테이너 -->
   <div id="toastContainer" class="toast-container"></div>
 
@@ -1890,7 +1979,7 @@
       } else {
         state.selectedPeriod = null;
         if (hint) {
-          hint.textContent = `참관하실 교시를 선택해주세요 (운영: ${ACTIVE_PERIODS.map(p => p + '교시').join(', ')})`;
+          hint.textContent = `참관하신 교시를 선택해주세요 (운영: ${ACTIVE_PERIODS.map(p => p + '교시').join(', ')})`;
         }
       }
 
@@ -2524,7 +2613,50 @@
     function updateCharCount() {
       const textarea = document.getElementById('observationContent');
       const countSpan = document.getElementById('charCount');
-      countSpan.textContent = `${textarea.value.length} / 1500자`;
+      if (countSpan && textarea) {
+        countSpan.textContent = `${textarea.value.length} / 1500자`;
+      }
+    }
+
+    /**
+     * 참관록 제출 폼 및 학년, 반, 교시 선택 상태 완전 초기화 (요청 3)
+     */
+    function resetParentSelectionForm() {
+      // 1. 상태 변수 초기화
+      state.selectedGrade = null;
+      state.selectedClass = null;
+      state.selectedPeriod = null;
+
+      // 2. 1단계 학년 선택 버튼 active 해제 및 안내 텍스트 초기화
+      document.querySelectorAll('.grade-group .select-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      const gradeHint = document.getElementById('gradeSelectionHint');
+      if (gradeHint) gradeHint.textContent = '1개 학년을 선택해주세요';
+
+      // 3. 2단계 반 선택 버튼 컨테이너 초기화 (안내 박스 표시)
+      renderClassButtons();
+
+      // 4. 3단계 교시 선택 버튼 active 해제 및 안내 텍스트 복구
+      document.querySelectorAll('.period-group .select-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      const periodHint = document.getElementById('periodSelectionHint');
+      if (periodHint) {
+        if (typeof ACTIVE_PERIODS !== 'undefined' && ACTIVE_PERIODS && ACTIVE_PERIODS.length > 0) {
+          periodHint.textContent = `참관하신 교시를 선택해주세요 (운영: ${ACTIVE_PERIODS.map(p => p + '교시').join(', ')})`;
+        } else {
+          periodHint.textContent = '참관하신 교시를 선택해주세요';
+        }
+      }
+
+      // 5. 수업 정보 카드 숨김 및 동기화 배너 텍스트 초기화
+      updateClassInfoDisplay();
+
+      // 6. 참관 소감 내용 초기화 및 글자수 카운트 갱신
+      const textarea = document.getElementById('observationContent');
+      if (textarea) textarea.value = '';
+      updateCharCount();
     }
 
     async function handleObservationSubmit(event) {
@@ -2554,18 +2686,24 @@
         return;
       }
 
-      const scheduleKey = `${state.selectedGrade}_${state.selectedClass}_${state.selectedPeriod}`;
+      const submittedGrade = state.selectedGrade;
+      const submittedClass = state.selectedClass;
+      const submittedPeriod = state.selectedPeriod;
+
+      const scheduleKey = `${submittedGrade}_${submittedClass}_${submittedPeriod}`;
       const schedule = classSchedules[scheduleKey] || { subject: '일반수업', teacher: '선생님' };
+      const submittedSubject = schedule.subject || '일반수업';
+      const submittedTeacher = formatTeacherName(schedule.teacher) || '선생님';
 
       const now = new Date();
       const uniqueObsId = 'obs_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
       const observationRecord = {
         id: uniqueObsId,
-        grade: state.selectedGrade,
-        classNum: state.selectedClass,
-        period: state.selectedPeriod,
-        subject: schedule.subject || '일반수업',
-        teacher: schedule.teacher || '선생님',
+        grade: submittedGrade,
+        classNum: submittedClass,
+        period: submittedPeriod,
+        subject: submittedSubject,
+        teacher: submittedTeacher,
         content: content,
         createdAt: now.toLocaleString('ko-KR', { dateStyle: 'medium', timeStyle: 'short' }),
         timestamp: now.getTime()
@@ -2576,9 +2714,8 @@
       localStorage.setItem(STORAGE_KEY_OBSERVATIONS, JSON.stringify(observationsList));
       renderAdminObservations();
 
-      // 2. 제출 폼 즉시 초기화 및 버튼 정상화 (요청 6: 또 다른 참관록도 바로 작성할 수 있도록 셋팅)
-      document.getElementById('observationContent').value = '';
-      updateCharCount();
+      // 2. 제출 완료 즉시 학년 선택, 반 선택, 교시 선택 및 소감 입력란 전체 reset (요청 3)
+      resetParentSelectionForm();
 
       const submitBtn = document.getElementById('submitBtn');
       if (submitBtn) {
@@ -2586,12 +2723,12 @@
         submitBtn.innerHTML = `<span>✍️ 참관록 제출하기</span>`;
       }
 
-      // 3. 저장 완료 메시지 배너 및 토스트 즉시 표시
+      // 3. 저장 완료 메시지 배너 및 토스트 즉시 표시 (다른 참관록 계속 작성하기 안내)
       const successBanner = document.getElementById('obsSubmitSuccessBanner');
       const successDetail = document.getElementById('obsSubmitSuccessDetail');
       if (successBanner) {
         if (successDetail) {
-          successDetail.innerHTML = `<strong>[${state.selectedGrade}학년 ${state.selectedClass}반 ${state.selectedPeriod}교시] ${escapeHtml(schedule.subject || '')} (${escapeHtml(schedule.teacher || '')})</strong> 소중한 참관 소감이 저장되었습니다.`;
+          successDetail.innerHTML = `<strong>[${submittedGrade}학년 ${submittedClass}반 ${submittedPeriod}교시] ${escapeHtml(submittedSubject)} (${escapeHtml(submittedTeacher)})</strong> 소중한 참관 소감이 저장되었습니다.`;
         }
         successBanner.style.display = 'block';
         successBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -2613,13 +2750,14 @@
     function prepareNextObservation() {
       const banner = document.getElementById('obsSubmitSuccessBanner');
       if (banner) banner.style.display = 'none';
-      const textarea = document.getElementById('observationContent');
-      if (textarea) {
-        textarea.value = '';
-        textarea.focus();
-        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      resetParentSelectionForm();
+      const firstCard = document.querySelector('.grade-group');
+      if (firstCard) {
+        firstCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        window.scrollTo({ top: 120, behavior: 'smooth' });
       }
-      showToast('✍️ 다음 참관록 작성을 시작합니다. 학년/반/교시를 선택하거나 내용을 작성해주세요.');
+      showToast('✍️ 다음 참관록 작성을 위해 학년, 반, 교시를 선택해주세요.');
     }
 
     /**
@@ -2871,34 +3009,61 @@
       }
     }
 
+    /**
+     * 교사명 정규화 및 포맷팅 (선생님 중복 방지 및 1회만 표시, '담당:' 접두사 제거)
+     */
+    function normalizeTeacherBaseName(name) {
+      if (!name) return '';
+      let clean = String(name).trim();
+      // '담당:' 또는 '담당 : ' 제거
+      clean = clean.replace(/^담당\s*:\s*/, '').trim();
+      // 끝에 붙은 '선생님' 또는 '교사' 중복 제거
+      clean = clean.replace(/(\s*선생님|\s*교사)+$/g, '').trim();
+      return clean;
+    }
+
+    function formatTeacherName(name) {
+      if (!name || name === '-' || name === '미등록') return '';
+      const base = normalizeTeacherBaseName(name);
+      if (!base) return '선생님';
+      return `${base} 선생님`;
+    }
+
     function populateObsTeacherFilter() {
       const teacherSelect = document.getElementById('obsFilterTeacher');
       if (!teacherSelect) return;
 
       const currentVal = teacherSelect.value;
-      const teacherSet = new Set();
+      const teacherMap = new Map();
 
       observationsList.forEach(item => {
         if (item.teacher && item.teacher.trim()) {
-          teacherSet.add(item.teacher.trim());
+          const base = normalizeTeacherBaseName(item.teacher);
+          if (base) {
+            teacherMap.set(base, formatTeacherName(base));
+          }
         }
       });
 
       Object.values(classSchedules).forEach(sched => {
         if (sched.teacher && sched.teacher.trim()) {
-          teacherSet.add(sched.teacher.trim());
+          const base = normalizeTeacherBaseName(sched.teacher);
+          if (base) {
+            teacherMap.set(base, formatTeacherName(base));
+          }
         }
       });
 
-      const teachers = Array.from(teacherSet).sort((a, b) => a.localeCompare(b, 'ko'));
+      const sortedBases = Array.from(teacherMap.keys()).sort((a, b) => a.localeCompare(b, 'ko'));
 
       let optionsHtml = '<option value="all">전체 교사</option>';
-      teachers.forEach(t => {
-        optionsHtml += `<option value="${escapeHtml(t)}">${escapeHtml(t)} 선생님</option>`;
+      sortedBases.forEach(base => {
+        const displayName = teacherMap.get(base);
+        optionsHtml += `<option value="${escapeHtml(base)}">${escapeHtml(displayName)}</option>`;
       });
       teacherSelect.innerHTML = optionsHtml;
 
-      if (currentVal && (currentVal === 'all' || teachers.includes(currentVal))) {
+      if (currentVal && (currentVal === 'all' || sortedBases.includes(currentVal))) {
         teacherSelect.value = currentVal;
       } else {
         teacherSelect.value = 'all';
@@ -2936,7 +3101,11 @@
         if (gradeFilter !== 'all' && Number(item.grade) !== Number(gradeFilter)) return false;
         if (classFilter !== 'all' && Number(item.classNum) !== Number(classFilter)) return false;
         if (periodFilter !== 'all' && Number(item.period) !== Number(periodFilter)) return false;
-        if (teacherFilter !== 'all' && (item.teacher || '').trim() !== teacherFilter) return false;
+        if (teacherFilter !== 'all') {
+          const normFilter = normalizeTeacherBaseName(teacherFilter);
+          const itemNorm = normalizeTeacherBaseName(item.teacher);
+          if (itemNorm !== normFilter) return false;
+        }
         if (searchKeyword) {
           const matchTarget = `${item.grade}학년 ${item.classNum}반 ${item.period}교시 ${item.subject || ''} ${item.teacher || ''} ${item.content || ''}`.toLowerCase();
           if (!matchTarget.includes(searchKeyword)) return false;
@@ -3010,13 +3179,14 @@
 
         let html = '';
         sortedList.forEach(item => {
+          const teacherDisplay = formatTeacherName(item.teacher);
           html += `
             <tr>
               <td style="white-space: nowrap; font-size: 11px; color: var(--text-muted);">${item.createdAt || '-'}</td>
               <td><strong>${item.grade}학년 ${item.classNum}반 ${item.period}교시</strong></td>
               <td>
                 <span style="font-weight: 700; color: var(--primary);">${escapeHtml(item.subject || '-')}</span><br>
-                <span style="font-size: 12px; color: var(--text-muted);">담당: ${escapeHtml(item.teacher || '-')} 선생님</span>
+                <span style="font-size: 12px; color: var(--text-muted);">${escapeHtml(teacherDisplay)}</span>
               </td>
               <td style="max-width: 320px; word-break: break-all; white-space: pre-wrap; line-height: 1.5;">${escapeHtml(item.content)}</td>
               <td>
@@ -3068,7 +3238,7 @@
             if (pDiff !== 0) return pDiff;
             return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
           });
-          const subjects = Array.from(new Set(group.items.map(i => `${i.period}교시 ${i.subject}(${i.teacher})`))).join(', ');
+          const subjects = Array.from(new Set(group.items.map(i => `${i.period}교시 ${i.subject}(${formatTeacherName(i.teacher)})`))).join(', ');
 
           groupHtml += `
             <div class="obs-group-card">
@@ -3086,6 +3256,7 @@
           `;
 
           group.items.forEach(item => {
+            const teacherDisplay = formatTeacherName(item.teacher);
             groupHtml += `
               <div class="obs-item-card">
                 <div class="obs-item-meta">
@@ -3096,9 +3267,7 @@
                     <span style="font-weight: 700; font-size: 13.5px; color: var(--text-main);">
                       ${escapeHtml(item.subject || '-')}
                     </span>
-                    <span style="font-size: 12px; color: var(--text-muted);">
-                      (담당: ${escapeHtml(item.teacher || '-')} 선생님)
-                    </span>
+                    ${teacherDisplay ? `<span style="font-size: 12px; color: var(--text-muted);">(${escapeHtml(teacherDisplay)})</span>` : ''}
                   </div>
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <span style="font-size: 11px; color: var(--text-muted);">${item.createdAt || '-'}</span>
@@ -3129,25 +3298,27 @@
           return;
         }
 
-        // 교사별 그룹핑
+        // 교사별 그룹핑 (baseName 기준 그룹핑하여 동일 교사 데이터 합산)
         const teacherGroups = {};
         filtered.forEach(item => {
-          const tName = (item.teacher || '선생님').trim();
-          if (!teacherGroups[tName]) {
-            teacherGroups[tName] = {
-              teacher: tName,
+          const baseName = normalizeTeacherBaseName(item.teacher) || '미등록';
+          const displayName = formatTeacherName(item.teacher) || '미등록 교사';
+          if (!teacherGroups[baseName]) {
+            teacherGroups[baseName] = {
+              baseName: baseName,
+              displayName: displayName,
               items: []
             };
           }
-          teacherGroups[tName].items.push(item);
+          teacherGroups[baseName].items.push(item);
         });
 
         // 교사명 가나다순 정렬
-        const sortedTeachers = Object.keys(teacherGroups).sort((a, b) => a.localeCompare(b, 'ko'));
+        const sortedKeys = Object.keys(teacherGroups).sort((a, b) => a.localeCompare(b, 'ko'));
 
         let groupHtml = '';
-        sortedTeachers.forEach(tName => {
-          const group = teacherGroups[tName];
+        sortedKeys.forEach(key => {
+          const group = teacherGroups[key];
           // 담당 교사 내에서는 학년 오름차순, 반 오름차순, 교시 오름차순 정렬
           group.items.sort((a, b) => {
             const gDiff = (Number(a.grade) || 0) - (Number(b.grade) || 0);
@@ -3164,7 +3335,7 @@
             <div class="obs-group-card">
               <div class="obs-group-card-header" style="background: #fffbeb; border-bottom: 1px solid #fde68a;">
                 <div class="obs-group-title">
-                  <span style="color: #92400e;">👩‍🏫 ${escapeHtml(tName)} 선생님</span>
+                  <span style="color: #92400e;">👩‍🏫 ${escapeHtml(group.displayName)}</span>
                   <span class="obs-group-badge" style="background: #fef3c7; color: #b45309; border: 1px solid #fcd34d;">
                     총 ${group.items.length}건의 참관 소감
                   </span>
@@ -3316,7 +3487,8 @@
 
       exportList.forEach(item => {
         const cleanContent = (item.content || '').replace(/"/g, '""').replace(/\n/g, ' ');
-        csv += `"${item.createdAt}","${item.grade}학년","${item.classNum}반","${item.period}교시","${item.subject}","${item.teacher}","${cleanContent}"\n`;
+        const teacherFormatted = formatTeacherName(item.teacher);
+        csv += `"${item.createdAt}","${item.grade}학년","${item.classNum}반","${item.period}교시","${item.subject}","${teacherFormatted}","${cleanContent}"\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -3327,6 +3499,630 @@
       a.click();
       URL.revokeObjectURL(url);
       showToast(`📥 참관록 ${exportList.length}건이 엑셀(CSV) 파일로 다운로드되었습니다.`);
+    }
+
+    /**
+     * ==============================================================================
+     * 참관록 인쇄 및 화면 보이는 그대로 PDF 다운로드 기능
+     * ==============================================================================
+     */
+    function ensurePdfLibrariesLoaded() {
+      return new Promise((resolve, reject) => {
+        const checkReady = () => {
+          const hasH2C = typeof window.html2canvas === 'function';
+          const hasJsPdf = Boolean(window.jspdf || window.jsPDF);
+          return hasH2C && hasJsPdf;
+        };
+
+        if (checkReady()) return resolve();
+
+        let attempts = 0;
+        const interval = setInterval(() => {
+          attempts++;
+          if (checkReady()) {
+            clearInterval(interval);
+            return resolve();
+          }
+          if (attempts > 30) {
+            clearInterval(interval);
+            if (typeof window.html2canvas !== 'function') {
+              const s1 = document.createElement('script');
+              s1.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+              document.head.appendChild(s1);
+            }
+            if (!window.jspdf && !window.jsPDF) {
+              const s2 = document.createElement('script');
+              s2.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+              document.head.appendChild(s2);
+            }
+            setTimeout(() => {
+              if (checkReady()) resolve();
+              else reject(new Error('PDF 라이브러리를 불러오는데 실패했습니다.'));
+            }, 1000);
+          }
+        }, 100);
+      });
+    }
+
+    /**
+     * 현재 적용된 필터 및 보기 모드에 맞는 인쇄/PDF용 고화질 HTML 문서 생성
+     */
+    function buildObservationsPrintHtml(mode, filteredList) {
+      const schoolTitle = schoolInfo.schoolName || '학교';
+      const nowStr = new Date().toLocaleString('ko-KR', { dateStyle: 'long', timeStyle: 'short' });
+
+      const gradeFilter = (mode === 'teacher') ? 'all' : (document.getElementById('obsFilterGrade')?.value || 'all');
+      const classFilter = (mode === 'teacher') ? 'all' : (document.getElementById('obsFilterClass')?.value || 'all');
+      const periodFilter = (mode === 'teacher') ? 'all' : (document.getElementById('obsFilterPeriod')?.value || 'all');
+      const teacherFilter = (mode === 'class') ? 'all' : (document.getElementById('obsFilterTeacher')?.value || 'all');
+      const searchKeyword = (document.getElementById('obsSearchKeyword')?.value || '').trim();
+
+      const filterParts = [];
+      if (gradeFilter !== 'all') filterParts.push(`${gradeFilter}학년`);
+      if (classFilter !== 'all') filterParts.push(`${classFilter}반`);
+      if (periodFilter !== 'all') filterParts.push(`${periodFilter}교시`);
+      if (teacherFilter !== 'all') filterParts.push(`${formatTeacherName(teacherFilter)}`);
+      if (searchKeyword) filterParts.push(`검색어: "${searchKeyword}"`);
+      const filterSummary = filterParts.length > 0 ? filterParts.join(' / ') : '전체 (필터 없음)';
+
+      let modeLabel = '전체 목록 보기';
+      if (mode === 'class') modeLabel = '반별 모아보기';
+      if (mode === 'teacher') modeLabel = '교사별 모아보기';
+
+      let bodyContentHtml = '';
+
+      if (mode === 'list') {
+        // 1. 전체 목록 테이블
+        const sortedList = [...filteredList].sort((a, b) => {
+          const gA = Number(a.grade) || 0;
+          const gB = Number(b.grade) || 0;
+          if (gA !== gB) return gA - gB;
+          const cA = Number(a.classNum) || 0;
+          const cB = Number(b.classNum) || 0;
+          if (cA !== cB) return cA - cB;
+          const pA = Number(a.period) || 0;
+          const pB = Number(b.period) || 0;
+          if (pA !== pB) return pA - pB;
+          return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+        });
+
+        let rowsHtml = '';
+        sortedList.forEach((item, idx) => {
+          const teacherDisplay = formatTeacherName(item.teacher);
+          rowsHtml += `
+            <tr style="border-bottom: 1px solid #e2e8f0; break-inside: avoid; page-break-inside: avoid;">
+              <td style="padding: 10px 8px; text-align: center; color: #64748b; font-size: 11px;">${idx + 1}</td>
+              <td style="padding: 10px 8px; text-align: center; color: #475569; font-size: 11px; white-space: nowrap;">${item.createdAt || '-'}</td>
+              <td style="padding: 10px 8px; text-align: center; font-size: 12px; font-weight: 700; white-space: nowrap;">${item.grade}학년 ${item.classNum}반 ${item.period}교시</td>
+              <td style="padding: 10px 8px; font-size: 12px;">
+                <span style="font-weight: 700; color: #166534;">${escapeHtml(item.subject || '-')}</span><br>
+                <span style="font-size: 11px; color: #64748b;">${escapeHtml(teacherDisplay)}</span>
+              </td>
+              <td style="padding: 10px 10px; font-size: 12px; line-height: 1.6; color: #1e293b; white-space: pre-wrap; word-break: break-all;">${escapeHtml(item.content)}</td>
+            </tr>
+          `;
+        });
+
+        bodyContentHtml = `
+          <table style="width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px;">
+            <thead>
+              <tr style="background: #f1f5f9; border-top: 2px solid #166534; border-bottom: 1.5px solid #cbd5e1;">
+                <th style="padding: 10px 8px; text-align: center; width: 40px; color: #334155;">No</th>
+                <th style="padding: 10px 8px; text-align: center; width: 115px; color: #334155;">접수일시</th>
+                <th style="padding: 10px 8px; text-align: center; width: 110px; color: #334155;">학년/반/교시</th>
+                <th style="padding: 10px 8px; text-align: left; width: 130px; color: #334155;">수업 및 교사</th>
+                <th style="padding: 10px 10px; text-align: left; color: #334155;">참관 소감 및 의견</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+        `;
+      } else if (mode === 'class') {
+        // 2. 반별 모아보기
+        const classGroups = {};
+        filteredList.forEach(item => {
+          const groupKey = `${item.grade}_${item.classNum}`;
+          if (!classGroups[groupKey]) {
+            classGroups[groupKey] = {
+              grade: item.grade,
+              classNum: item.classNum,
+              items: []
+            };
+          }
+          classGroups[groupKey].items.push(item);
+        });
+
+        const sortedKeys = Object.keys(classGroups).sort((a, b) => {
+          const [gA, cA] = a.split('_').map(Number);
+          const [gB, cB] = b.split('_').map(Number);
+          if (gA !== gB) return gA - gB;
+          return cA - cB;
+        });
+
+        let groupBlocksHtml = '';
+        sortedKeys.forEach(key => {
+          const group = classGroups[key];
+          group.items.sort((a, b) => {
+            const pDiff = (Number(a.period) || 0) - (Number(b.period) || 0);
+            if (pDiff !== 0) return pDiff;
+            return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+          });
+          const subjects = Array.from(new Set(group.items.map(i => `${i.period}교시 ${i.subject}(${formatTeacherName(i.teacher)})`))).join(', ');
+
+          let itemsHtml = '';
+          group.items.forEach(item => {
+            const teacherDisplay = formatTeacherName(item.teacher);
+            itemsHtml += `
+              <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 3.5px solid #10b981; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; break-inside: avoid; page-break-inside: avoid;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="background: #ecfdf5; color: #047857; font-weight: 700; font-size: 11px; padding: 2px 7px; border-radius: 4px; border: 1px solid #a7f3d0;">${item.period}교시</span>
+                    <strong style="font-size: 13px; color: #1e293b;">${escapeHtml(item.subject || '-')}</strong>
+                    ${teacherDisplay ? `<span style="font-size: 11.5px; color: #64748b;">(${escapeHtml(teacherDisplay)})</span>` : ''}
+                  </div>
+                  <span style="font-size: 11px; color: #94a3b8;">${item.createdAt || '-'}</span>
+                </div>
+                <div style="font-size: 12px; line-height: 1.6; color: #334155; white-space: pre-wrap; word-break: break-all; background: #f8fafc; padding: 8px 10px; border-radius: 4px;">${escapeHtml(item.content)}</div>
+              </div>
+            `;
+          });
+
+          groupBlocksHtml += `
+            <div style="margin-bottom: 20px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; break-inside: avoid; page-break-inside: avoid;">
+              <div style="background: #f1f5f9; padding: 10px 14px; border-bottom: 1px solid #cbd5e1; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                <div style="font-size: 14.5px; font-weight: 800; color: #1e293b;">🏫 ${group.grade}학년 ${group.classNum}반 <span style="font-size: 12px; font-weight: 600; color: #166534; background: #dcfce7; padding: 2px 8px; border-radius: 4px; margin-left: 6px;">${group.items.length}건 접수</span></div>
+                <div style="font-size: 11.5px; color: #475569;"><strong>수업:</strong> ${escapeHtml(subjects)}</div>
+              </div>
+              <div style="padding: 12px; background: #ffffff;">
+                ${itemsHtml}
+              </div>
+            </div>
+          `;
+        });
+        bodyContentHtml = groupBlocksHtml;
+      } else if (mode === 'teacher') {
+        // 3. 교사별 모아보기
+        const teacherGroups = {};
+        filteredList.forEach(item => {
+          const baseName = normalizeTeacherBaseName(item.teacher) || '미등록';
+          const displayName = formatTeacherName(item.teacher) || '미등록 교사';
+          if (!teacherGroups[baseName]) {
+            teacherGroups[baseName] = {
+              baseName: baseName,
+              displayName: displayName,
+              items: []
+            };
+          }
+          teacherGroups[baseName].items.push(item);
+        });
+
+        const sortedKeys = Object.keys(teacherGroups).sort((a, b) => a.localeCompare(b, 'ko'));
+
+        let groupBlocksHtml = '';
+        sortedKeys.forEach(key => {
+          const group = teacherGroups[key];
+          group.items.sort((a, b) => {
+            const gDiff = (Number(a.grade) || 0) - (Number(b.grade) || 0);
+            if (gDiff !== 0) return gDiff;
+            const cDiff = (Number(a.classNum) || 0) - (Number(b.classNum) || 0);
+            if (cDiff !== 0) return cDiff;
+            const pDiff = (Number(a.period) || 0) - (Number(b.period) || 0);
+            if (pDiff !== 0) return pDiff;
+            return String(a.createdAt || '').localeCompare(String(b.createdAt || ''));
+          });
+          const classList = Array.from(new Set(group.items.map(i => `${i.grade}학년 ${i.classNum}반(${i.period}교시 ${i.subject})`))).join(', ');
+
+          let itemsHtml = '';
+          group.items.forEach(item => {
+            itemsHtml += `
+              <div style="background: #ffffff; border: 1px solid #fed7aa; border-left: 3.5px solid #f97316; border-radius: 6px; padding: 10px 12px; margin-bottom: 8px; break-inside: avoid; page-break-inside: avoid;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; flex-wrap: wrap; gap: 4px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span style="background: #eff6ff; color: #1d4ed8; font-weight: 700; font-size: 11px; padding: 2px 7px; border-radius: 4px; border: 1px solid #bfdbfe;">${item.grade}학년 ${item.classNum}반 ${item.period}교시</span>
+                    <strong style="font-size: 13px; color: #1e293b;">과목: ${escapeHtml(item.subject || '-')}</strong>
+                  </div>
+                  <span style="font-size: 11px; color: #94a3b8;">${item.createdAt || '-'}</span>
+                </div>
+                <div style="font-size: 12px; line-height: 1.6; color: #334155; white-space: pre-wrap; word-break: break-all; background: #fffaf5; padding: 8px 10px; border-radius: 4px;">${escapeHtml(item.content)}</div>
+              </div>
+            `;
+          });
+
+          groupBlocksHtml += `
+            <div style="margin-bottom: 20px; border: 1px solid #fde68a; border-radius: 8px; overflow: hidden; break-inside: avoid; page-break-inside: avoid;">
+              <div style="background: #fffbeb; padding: 10px 14px; border-bottom: 1px solid #fde68a; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                <div style="font-size: 14.5px; font-weight: 800; color: #92400e;">👩‍🏫 ${escapeHtml(group.displayName)} <span style="font-size: 12px; font-weight: 600; color: #b45309; background: #fef3c7; padding: 2px 8px; border-radius: 4px; margin-left: 6px;">총 ${group.items.length}건</span></div>
+                <div style="font-size: 11.5px; color: #78350f;"><strong>담당 학급:</strong> ${escapeHtml(classList)}</div>
+              </div>
+              <div style="padding: 12px; background: #ffffff;">
+                ${itemsHtml}
+              </div>
+            </div>
+          `;
+        });
+        bodyContentHtml = groupBlocksHtml;
+      }
+
+      return `
+        <div style="font-family: 'Pretendard', sans-serif; color: #1e293b; background: #ffffff; padding: 8px;">
+          <!-- 공통 상단 헤더 -->
+          <div style="border-bottom: 2.5px solid #166534; padding-bottom: 14px; margin-bottom: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 10px;">
+              <div>
+                <div style="font-size: 13px; font-weight: 700; color: #166534; margin-bottom: 4px;">
+                  🏫 ${escapeHtml(schoolTitle)} 공개수업
+                </div>
+                <h1 style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px;">
+                  학부모 공개수업 참관록 보고서
+                </h1>
+              </div>
+              <div style="text-align: right; font-size: 11.5px; color: #64748b; line-height: 1.6;">
+                <div><strong style="color: #334155;">보기 모드:</strong> ${modeLabel}</div>
+                <div><strong style="color: #334155;">적용 필터:</strong> ${escapeHtml(filterSummary)}</div>
+                <div><strong style="color: #334155;">출력 일시:</strong> ${nowStr} | <strong>총 건수:</strong> <span style="color: #166534; font-weight: 700;">${filteredList.length}건</span></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 본문 내용 -->
+          ${bodyContentHtml}
+
+          <!-- 공통 하단 푸터 -->
+          <div style="margin-top: 30px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 11px; color: #94a3b8;">
+            <span>${escapeHtml(schoolTitle)} 학부모 참관록 시스템</span>
+            <span>출력일시: ${nowStr}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    function openPrintPreviewModal() {
+      const modal = document.getElementById('obsPrintPreviewModal');
+      if (modal) modal.classList.add('active');
+    }
+
+    function closePrintPreviewModal() {
+      const modal = document.getElementById('obsPrintPreviewModal');
+      if (modal) modal.classList.remove('active');
+    }
+
+    /**
+     * 참관록 인쇄 실행 (모달 미리보기 + 브라우저 인쇄 연동)
+     */
+    function triggerObservationsPrint() {
+      const filtered = getFilteredObservations();
+      if (!filtered || filtered.length === 0) {
+        showToast('⚠️ 인쇄할 참관록 데이터가 없습니다.');
+        return;
+      }
+
+      const printDocHtml = buildObservationsPrintHtml(currentObsViewMode, filtered);
+      
+      const container = document.getElementById('obsPrintDocumentContainer');
+      if (container) container.innerHTML = printDocHtml;
+
+      const summaryText = document.getElementById('obsPrintSummaryText');
+      if (summaryText) {
+        const modeLabel = currentObsViewMode === 'list' ? '전체 목록' : (currentObsViewMode === 'class' ? '반별 모아보기' : '교사별 모아보기');
+        summaryText.textContent = `[${modeLabel}] 총 ${filtered.length}건의 참관록`;
+      }
+
+      // 모달 표시
+      openPrintPreviewModal();
+
+      // 인쇄 창 호출 시도
+      setTimeout(() => {
+        printPreviewDocumentNow(true);
+      }, 250);
+    }
+
+    function printPreviewDocumentNow(isInitialAuto = false) {
+      const filtered = getFilteredObservations();
+      if (!filtered || filtered.length === 0) return;
+      const printDocHtml = buildObservationsPrintHtml(currentObsViewMode, filtered);
+
+      // 인쇄 전용 영역 세팅
+      const renderArea = document.getElementById('obsPrintRenderArea');
+      if (renderArea) {
+        renderArea.innerHTML = printDocHtml;
+      }
+
+      let iframe = document.getElementById('obsPrintHiddenIframe');
+      if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'obsPrintHiddenIframe';
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = '0';
+        document.body.appendChild(iframe);
+      }
+
+      try {
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>참관록 인쇄</title><style>@page { size: A4 portrait; margin: 12mm 10mm; } body { font-family: sans-serif; margin: 0; background: #fff; }</style></head><body>${printDocHtml}</body></html>`);
+        doc.close();
+
+        setTimeout(() => {
+          try {
+            iframe.contentWindow.focus();
+            iframe.contentWindow.print();
+          } catch (iframeErr) {
+            console.warn('Iframe print call blocked:', iframeErr);
+            // Fallback: window.print directly
+            try {
+              document.body.classList.add('is-printing-obs');
+              window.print();
+            } catch (winErr) {
+              console.warn('Window print call blocked by sandbox:', winErr);
+              if (!isInitialAuto) {
+                showToast('💡 iframe 보안 환경으로 직접 인쇄창이 제한되었습니다. [📄 PDF 다운로드] 또는 [↗️ 새 창에서 인쇄]를 이용해주세요.');
+              }
+            } finally {
+              setTimeout(() => document.body.classList.remove('is-printing-obs'), 1000);
+            }
+          }
+        }, 300);
+      } catch (err) {
+        console.warn('Iframe document write blocked:', err);
+        try {
+          document.body.classList.add('is-printing-obs');
+          window.print();
+        } catch (winErr) {
+          if (!isInitialAuto) {
+            showToast('💡 [📄 PDF 다운로드] 또는 [↗️ 새 창에서 인쇄]를 이용해주세요.');
+          }
+        } finally {
+          setTimeout(() => document.body.classList.remove('is-printing-obs'), 1000);
+        }
+      }
+    }
+
+    function openPrintInNewWindow() {
+      const filtered = getFilteredObservations();
+      if (!filtered || filtered.length === 0) return;
+      const printDocHtml = buildObservationsPrintHtml(currentObsViewMode, filtered);
+      const schoolTitle = schoolInfo.schoolName || '학교';
+
+      const fullPageHtml = `<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>${escapeHtml(schoolTitle)} 공개수업 참관록</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700&display=swap">
+  <style>
+    body { font-family: 'Pretendard', sans-serif; margin: 15mm; background: #fff; color: #1e293b; }
+    @media print {
+      body { margin: 10mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      @page { size: A4 portrait; margin: 10mm; }
+    }
+  </style>
+</head>
+<body>
+  ${printDocHtml}
+  <script>
+    window.onload = function() {
+      setTimeout(function() {
+        window.print();
+      }, 350);
+    };
+  <\/script>
+</body>
+</html>`;
+
+      const blob = new Blob([fullPageHtml], { type: 'text/html;charset=utf-8' });
+      const blobUrl = URL.createObjectURL(blob);
+      const newWin = window.open(blobUrl, '_blank');
+      if (!newWin) {
+        showToast('⚠️ 팝업 차단이 활성화되어 새 창을 열 수 없습니다. 브라우저 팝업을 허용해주세요.');
+      }
+    }
+
+    /**
+     * 화면에 보이는 그대로 고화질 PDF 다운로드 기능 (Iframe 렌더링 + html2canvas + jsPDF 기반)
+     * - 화면 스크롤 위치, 모달 열림 여부, 부모 flexbox 스타일에 전혀 영향받지 않고
+     * - 완벽하게 100% 내용이 담긴 선명한 다중 페이지 A4 PDF 문서로 저장
+     */
+    async function downloadObservationsPDF() {
+      const filtered = getFilteredObservations();
+      if (!filtered || filtered.length === 0) {
+        showToast('⚠️ 다운로드할 참관록 데이터가 없습니다.');
+        return;
+      }
+
+      showToast('⏳ 화면에 보이는 참관록을 PDF 문서로 생성하고 있습니다...');
+
+      // 1. PDF 렌더링 라이브러리(html2canvas, jsPDF) 로드 대기
+      try {
+        await ensurePdfLibrariesLoaded();
+      } catch (err) {
+        console.error('PDF 라이브러리 로드 실패:', err);
+        showToast('⚠️ PDF 엔진을 불러오는 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        return;
+      }
+
+      const JsPDFConstructor = window.jspdf ? (window.jspdf.jsPDF || window.jspdf) : window.jsPDF;
+      if (!JsPDFConstructor || typeof window.html2canvas !== 'function') {
+        showToast('⚠️ PDF 생성 엔진 초기화에 실패했습니다.');
+        return;
+      }
+
+      // 2. 현재 선택된 보기 모드와 필터가 반영된 인쇄용 HTML 생성
+      const printDocHtml = buildObservationsPrintHtml(currentObsViewMode, filtered);
+
+      // 3. 부모 창의 스크롤 및 CSS 스타일에 영향을 받지 않는 독립된 가상 렌더링 iframe 생성
+      let iframe = null;
+
+      try {
+        iframe = document.createElement('iframe');
+        iframe.id = 'pdfRenderVirtualIframe';
+        // 화면 뒤에 배치하여 깜빡임을 방지하되, 브라우저가 온전히 렌더링하도록 뷰포트 내에 표시
+        iframe.style.position = 'fixed';
+        iframe.style.left = '0';
+        iframe.style.top = '0';
+        iframe.style.width = '794px'; // A4 96dpi 기준 210mm
+        iframe.style.height = '1123px';
+        iframe.style.border = '0';
+        iframe.style.zIndex = '-99999';
+        iframe.style.visibility = 'visible';
+        iframe.style.opacity = '1';
+        iframe.style.pointerEvents = 'none';
+
+        document.body.appendChild(iframe);
+
+        const iframeWin = iframe.contentWindow;
+        const iframeDoc = iframe.contentDocument || iframeWin.document;
+
+        iframeDoc.open();
+        iframeDoc.write(`<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800&display=swap">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #ffffff;
+      color: #1e293b;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      width: 794px;
+      -webkit-font-smoothing: antialiased;
+    }
+    #pdfDocCaptureArea {
+      width: 794px;
+      background: #ffffff;
+      padding: 16px 20px;
+      box-sizing: border-box;
+    }
+    table { border-collapse: collapse; }
+  </style>
+</head>
+<body>
+  <div id="pdfDocCaptureArea">
+    ${printDocHtml}
+  </div>
+</body>
+</html>`);
+        iframeDoc.close();
+
+        // 폰트 및 DOM 레이아웃 안정화를 위해 대기
+        await new Promise(resolve => setTimeout(resolve, 350));
+
+        const targetEl = iframeDoc.getElementById('pdfDocCaptureArea') || iframeDoc.body;
+        const targetHeight = Math.max(
+          targetEl.scrollHeight,
+          targetEl.offsetHeight,
+          iframeDoc.body.scrollHeight,
+          iframeDoc.documentElement.scrollHeight
+        );
+
+        // iframe 높이를 컨텐츠 전체 높이에 맞춰 확장
+        iframe.style.height = `${targetHeight + 40}px`;
+        await new Promise(resolve => setTimeout(resolve, 150));
+
+        // 4. html2canvas로 캡처 (iframe 내부의 문서를 캡처하므로 스크롤 오프셋 문제가 전혀 없음)
+        const canvas = await window.html2canvas(targetEl, {
+          scale: 2, // 선명한 2배 고화질
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          windowWidth: 794,
+          windowHeight: targetHeight + 40,
+          scrollX: 0,
+          scrollY: 0
+        });
+
+        if (!canvas || canvas.width === 0 || canvas.height === 0) {
+          throw new Error('문서 이미지 캡처에 실패했습니다.');
+        }
+
+        // 5. jsPDF 생성 (A4 세로 모드)
+        const pdf = new JsPDFConstructor({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4',
+          compress: true
+        });
+
+        const pageWidth = 210; // A4 가로 (mm)
+        const pageHeight = 297; // A4 세로 (mm)
+        const marginX = 8;
+        const marginY = 8;
+        const printWidth = pageWidth - (marginX * 2); // 194mm
+        const printHeight = pageHeight - (marginY * 2); // 281mm
+
+        // 1개 A4 출력 페이지에 해당하는 캔버스 상의 픽셀 높이
+        const pageCanvasHeight = Math.floor((canvas.width / printWidth) * printHeight);
+        const totalHeight = canvas.height;
+        const totalPages = Math.max(1, Math.ceil(totalHeight / pageCanvasHeight));
+
+        let currentSourceY = 0;
+        let pageNum = 1;
+
+        while (currentSourceY < totalHeight) {
+          if (pageNum > 1) {
+            pdf.addPage();
+          }
+
+          const currentChunkHeight = Math.min(pageCanvasHeight, totalHeight - currentSourceY);
+
+          // 1페이지용 임시 캔버스 슬라이스
+          const pageCanvas = document.createElement('canvas');
+          pageCanvas.width = canvas.width;
+          pageCanvas.height = currentChunkHeight;
+          const pageCtx = pageCanvas.getContext('2d');
+
+          // 흰색 배경 채우기
+          pageCtx.fillStyle = '#ffffff';
+          pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+          // 원본 캔버스에서 해당 페이지 분량 잘라서 그리기
+          pageCtx.drawImage(
+            canvas,
+            0, currentSourceY, canvas.width, currentChunkHeight,
+            0, 0, canvas.width, currentChunkHeight
+          );
+
+          const imgData = pageCanvas.toDataURL('image/jpeg', 0.98);
+          // 실제 출력 높이 (단일 페이지나 마지막 페이지에서 비율 유지)
+          const slicePrintHeight = (currentChunkHeight / canvas.width) * printWidth;
+
+          pdf.addImage(imgData, 'JPEG', marginX, marginY, printWidth, slicePrintHeight);
+
+          // 하단 페이지 번호
+          pdf.setFontSize(8.5);
+          pdf.setTextColor(140, 140, 140);
+          pdf.text(`- ${pageNum} / ${totalPages} -`, pageWidth / 2, pageHeight - 4, { align: 'center' });
+
+          currentSourceY += currentChunkHeight;
+          pageNum++;
+        }
+
+        // 파일명 생성
+        const modeLabel = currentObsViewMode === 'list' ? '전체목록' : (currentObsViewMode === 'class' ? '반별' : '교사별');
+        const filename = `${schoolInfo.schoolName || '학교'}_공개수업_참관록_${modeLabel}_${new Date().toISOString().slice(0, 10)}.pdf`;
+
+        // 6. 브라우저 PDF 다운로드 실행
+        pdf.save(filename);
+        showToast(`✅ 참관록 PDF 파일(${filename})이 정상적으로 다운로드되었습니다!`);
+      } catch (err) {
+        console.error('PDF 다운로드 실패:', err);
+        showToast('⚠️ PDF 생성 중 오류가 발생했습니다: ' + (err.message || '다시 시도해주세요'));
+      } finally {
+        if (iframe && iframe.parentNode) {
+          iframe.parentNode.removeChild(iframe);
+        }
+      }
     }
 
     /**
@@ -3362,7 +4158,7 @@
             <td><strong>${item.grade}학년 ${item.classNum}반</strong></td>
             <td><span class="info-badge" style="font-size: 11px; padding: 2px 8px;">${item.period}교시</span></td>
             <td><strong>${escapeHtml(item.subject)}</strong></td>
-            <td>${escapeHtml(item.teacher)}</td>
+            <td>${escapeHtml(formatTeacherName(item.teacher))}</td>
             <td>
               <div style="display: flex; gap: 4px;">
                 <button type="button" class="btn-nav" style="padding: 3px 8px; font-size: 11px; color: var(--primary);" onclick="startEditScheduleItem('${key}')">
@@ -3423,9 +4219,7 @@
         return;
       }
 
-      if (!teacher.includes('선생님') && teacher.length <= 4) {
-        teacher = teacher + ' 선생님';
-      }
+      teacher = formatTeacherName(teacher);
 
       const scheduleKey = `${grade}_${classNum}_${period}`;
       const scheduleData = {
@@ -3791,7 +4585,7 @@
             const pCols = colMap.widePeriods[pNum];
             const sub = String(pCols.subCol !== -1 ? row[pCols.subCol] || '' : '').trim();
             let tea = String(pCols.teaCol !== -1 ? row[pCols.teaCol] || '' : '').trim();
-            if (tea && !tea.includes('선생님') && tea.length <= 4) tea = `${tea} 선생님`;
+            if (tea) tea = formatTeacherName(tea);
 
             if (sub || tea || (gradeVal && classVal)) {
               const v = Boolean(gradeVal && gradeVal >= 1 && gradeVal <= 3 && classVal && classVal >= 1 && sub && tea);
@@ -3822,8 +4616,8 @@
 
           const subject = String(row[colMap.subject] || '').trim();
           let teacher = String(row[colMap.teacher] || '').trim();
-          if (teacher && !teacher.includes('선생님') && teacher.length <= 4) {
-            teacher = `${teacher} 선생님`;
+          if (teacher) {
+            teacher = formatTeacherName(teacher);
           }
 
           const isValid = Boolean(
@@ -3937,10 +4731,7 @@
 
           const key = `${g}_${c}_${p}`;
           const cleanSubject = String(item.subject || '').trim();
-          let cleanTeacher = String(item.teacher || '').trim();
-          if (cleanTeacher && !cleanTeacher.includes('선생님') && cleanTeacher.length <= 4) {
-            cleanTeacher = cleanTeacher + ' 선생님';
-          }
+          const cleanTeacher = formatTeacherName(item.teacher);
 
           uniqueItems[key] = {
             grade: g,
