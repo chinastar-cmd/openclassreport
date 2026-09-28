@@ -92,6 +92,16 @@
           "type": "object",
           "description": "학년별 반 수 매핑"
         },
+        "openClassHomeUrl": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "공개수업 홈으로 이동 웹사이트 URL"
+        },
+        "openClassHomeButtonText": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "공개수업 홈 이동 버튼 표시 텍스트"
+        },
         "updatedAt": {
           "type": "string",
           "description": "수정일시"
