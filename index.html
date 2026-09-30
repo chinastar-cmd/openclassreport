@@ -80,14 +80,15 @@
 
     .container {
       width: 100%;
-      max-width: 520px; /* 학부모 참관록 메인: 스마트폰 화면에 맞춘 최적 모바일 비율 */
+      max-width: 680px; /* hkopenclass.pages.dev 기준: 학부모 화면은 680px의 편안하고 시원한 가로 비율 적용 */
       margin: 0 auto;
-      padding: 14px 14px 40px;
+      padding: 16px 16px 40px;
       transition: max-width 0.25s ease;
+      box-sizing: border-box;
     }
 
     .container.admin-view-mode {
-      max-width: 1100px; /* 관리자 페이지: 데스크탑 전용 넓은 화면 유지 */
+      max-width: 1100px; /* 관리자 페이지: 데스크탑 전용 1100px 넓은 화면 유지 */
       padding: 20px 20px 50px;
     }
 
@@ -932,221 +933,68 @@
     }
 
     /* ==============================================================================
-     * 학부모 참관록 메인화면(휴대폰 스마트폰 뷰포트 최적화 전용 스타일)
-     * - 관리자 페이지(#adminView)는 데스크탑 전용 레이아웃을 그대로 유지하고,
-     * - 학부모 참관록(#parentMainView)만 휴대폰 화면에서 보기 편하도록 비율 최적화
+     * 모바일 반응형 뷰포트 최적화 (hkopenclass.pages.dev 스타일: 큼직하고 시원한 가독성)
+     * - 데스크탑/모바일 모두 글씨가 축소되거나 그림처럼 작아지지 않고 화면을 시원하게 채움
      * ============================================================================== */
     #parentMainView {
-      max-width: 520px;
-      margin: 0 auto;
       width: 100%;
     }
 
-    #parentMainView .app-header {
-      padding: 20px 18px 22px;
-      border-radius: 16px;
-      margin-bottom: 14px;
-      box-shadow: 0 3px 10px rgba(45, 106, 79, 0.12);
-    }
-
-    #parentMainView .app-header::after {
-      font-size: 65px;
-      right: 10px;
-      bottom: -10px;
-      opacity: 0.12;
-    }
-
-    #parentMainView .school-tag {
-      font-size: 11.5px;
-      padding: 3.5px 10px;
-      margin-bottom: 8px;
-    }
-
-    #parentMainView .app-title {
-      font-size: 21px;
-      font-weight: 800;
-      margin-bottom: 6px;
-      letter-spacing: -0.3px;
-    }
-
-    #parentMainView .app-subtitle {
-      font-size: 13px;
-      line-height: 1.48;
-      opacity: 0.95;
-      word-break: keep-all;
-    }
-
-    #parentMainView .top-nav {
-      margin-bottom: 12px;
-    }
-
-    #parentMainView .top-nav .btn-nav {
-      padding: 6px 12px;
-      font-size: 12.5px;
-      border-radius: 8px;
-    }
-
-    #parentMainView .card {
-      padding: 16px 15px;
-      margin-bottom: 12px;
-      border-radius: 14px;
-      border-color: #d1fae5;
-      box-shadow: 0 1px 4px rgba(45, 106, 79, 0.05);
-    }
-
-    #parentMainView .card-title {
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 12px;
-    }
-
-    #parentMainView .step-number {
-      width: 22px;
-      height: 22px;
-      font-size: 12px;
-    }
-
-    #parentMainView .step-hint {
-      font-size: 11.5px;
-    }
-
-    #parentMainView .btn-group {
-      gap: 8px;
-    }
-
-    #parentMainView .select-btn {
-      padding: 12px 6px;
-      font-size: 15px;
-      border-radius: 10px;
-      min-height: 52px;
-    }
-
-    #parentMainView .select-btn .btn-sub {
-      font-size: 11px;
-      margin-top: 2px;
-    }
-
-    #parentMainView .class-grid {
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-    }
-
-    @media (min-width: 440px) {
-      #parentMainView .class-grid {
-        grid-template-columns: repeat(5, 1fr);
-      }
-    }
-
-    #parentMainView .class-btn {
-      padding: 11px 4px;
-      font-size: 14.5px;
-      font-weight: 700;
-      min-height: 44px;
-      border-radius: 8px;
-    }
-
-    #parentMainView .placeholder-box {
-      padding: 16px 12px;
-      font-size: 13px;
-      border-radius: 10px;
-      line-height: 1.5;
-    }
-
-    #parentMainView .info-card {
-      padding: 14px 14px;
-      border-radius: 12px;
-    }
-
-    #parentMainView .info-header {
-      margin-bottom: 10px;
-      padding-bottom: 8px;
-    }
-
-    #parentMainView .info-badge {
-      font-size: 12.5px;
-      padding: 4px 10px;
-    }
-
-    #parentMainView .info-time {
-      font-size: 12.5px;
-    }
-
-    #parentMainView .info-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    #parentMainView .info-item {
-      padding: 10px 12px;
-      border-radius: 8px;
-    }
-
-    #parentMainView .info-label {
-      font-size: 11px;
-      margin-bottom: 2px;
-    }
-
-    #parentMainView .info-value {
-      font-size: 15.5px;
-      font-weight: 800;
-    }
-
-    #parentMainView .form-textarea {
-      min-height: 140px;
-      font-size: 15.5px;
-      padding: 12px 14px;
-      line-height: 1.55;
-      border-radius: 10px;
-    }
-
-    #parentMainView .quick-tags {
-      gap: 6px;
-      margin-bottom: 10px;
-    }
-
-    #parentMainView .quick-tag-btn {
-      padding: 6px 11px;
-      font-size: 12px;
-      border-radius: 9999px;
-    }
-
-    #parentMainView .btn-submit {
-      padding: 15px;
-      font-size: 16.5px;
-      font-weight: 800;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(45, 106, 79, 0.22);
-    }
-
-    #parentMainView #obsSubmitSuccessBanner {
-      padding: 18px 16px;
-      border-radius: 14px;
-    }
-
-    #parentMainView #obsSubmitSuccessBanner .btn-nav {
-      flex: 1 1 180px;
-      justify-content: center;
-      text-align: center;
-      padding: 11px 16px;
-      font-size: 14px;
-      border-radius: 10px;
-    }
-
-    #parentMainView #obsSelectedClassBanner {
-      padding: 10px 12px;
-      border-radius: 10px;
-      margin-bottom: 12px;
-    }
-
-    #parentMainView #obsBannerTargetText {
-      font-size: 13.5px;
-    }
-
-    /* 스마트폰(작은 모바일 기기) 전용 마진 최적화 */
     @media (max-width: 600px) {
-      .container:not(.admin-view-mode) {
-        padding: 10px 10px 32px;
+      .container {
+        padding: 12px 14px 36px;
+      }
+      .app-header {
+        padding: 20px 18px 22px;
+        margin-bottom: 16px;
+        border-radius: 14px;
+      }
+      .app-title {
+        font-size: 22px;
+        letter-spacing: -0.3px;
+      }
+      .app-subtitle {
+        font-size: 13.5px;
+        line-height: 1.5;
+      }
+      .card {
+        padding: 18px 16px;
+        margin-bottom: 16px;
+        border-radius: 12px;
+      }
+      .card-title {
+        font-size: 16.5px;
+      }
+      .select-btn {
+        padding: 13px 8px;
+        font-size: 15.5px;
+        min-height: 52px;
+      }
+      .class-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: 6px;
+      }
+      .class-btn {
+        padding: 11px 4px;
+        font-size: 15px;
+        font-weight: 700;
+        min-height: 44px;
+      }
+      .form-textarea {
+        font-size: 16px; /* 스마트폰 키보드 입력 시 브라우저 자동 확대 방지 및 쾌적한 가독성 */
+        min-height: 140px;
+        line-height: 1.55;
+      }
+      .btn-submit {
+        padding: 16px;
+        font-size: 17px;
+        font-weight: 800;
+        border-radius: 12px;
+      }
+      #obsSubmitSuccessBanner .btn-nav {
+        flex: 1 1 180px;
+        justify-content: center;
+        text-align: center;
       }
     }
 
