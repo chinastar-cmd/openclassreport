@@ -80,9 +80,9 @@
 
     .container {
       width: 100%;
-      max-width: 680px; /* hkopenclass.pages.dev 기준: 학부모 화면은 680px의 편안하고 시원한 가로 비율 적용 */
+      max-width: 760px; /* 큼직하고 시원한 가로 비율 적용 */
       margin: 0 auto;
-      padding: 16px 16px 40px;
+      padding: 18px 16px 50px;
       transition: max-width 0.25s ease;
       box-sizing: border-box;
     }
@@ -186,8 +186,8 @@
     .app-header {
       background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
       color: #ffffff;
-      padding: 28px 24px;
-      border-radius: var(--radius-lg);
+      padding: 32px 28px;
+      border-radius: 18px;
       margin-bottom: 24px;
       box-shadow: var(--shadow-md);
       position: relative;
@@ -197,46 +197,46 @@
     .app-header::after {
       content: '🏫';
       position: absolute;
-      right: 15px;
+      right: 18px;
       bottom: -15px;
-      font-size: 90px;
-      opacity: 0.15;
+      font-size: 96px;
+      opacity: 0.16;
       pointer-events: none;
     }
 
     .school-tag {
       display: inline-block;
-      background-color: rgba(255, 255, 255, 0.22);
+      background-color: rgba(255, 255, 255, 0.25);
       color: #ffffff;
-      font-size: 13px;
-      font-weight: 600;
-      padding: 4px 12px;
+      font-size: 14px;
+      font-weight: 700;
+      padding: 6px 14px;
       border-radius: var(--radius-full);
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       backdrop-filter: blur(4px);
     }
 
     .app-title {
-      font-size: 24px;
-      font-weight: 700;
-      margin-bottom: 6px;
+      font-size: 27px;
+      font-weight: 800;
+      margin-bottom: 8px;
       letter-spacing: -0.5px;
     }
 
     .app-subtitle {
-      font-size: 14px;
-      opacity: 0.92;
-      line-height: 1.5;
+      font-size: 15px;
+      opacity: 0.95;
+      line-height: 1.6;
     }
 
     /* Cards */
     .card {
       background-color: var(--pastel-card-bg);
-      border-radius: var(--radius-lg);
-      padding: 22px 20px;
-      margin-bottom: 20px;
+      border-radius: 16px;
+      padding: 26px 22px;
+      margin-bottom: 22px;
       box-shadow: var(--shadow-sm);
-      border: 1px solid var(--border-color);
+      border: 1.5px solid var(--border-color);
       transition: border-color 0.2s ease, box-shadow 0.2s ease;
     }
 
@@ -246,22 +246,22 @@
     }
 
     .card-title {
-      font-size: 16px;
-      font-weight: 700;
+      font-size: 18px;
+      font-weight: 800;
       color: var(--text-main);
-      margin-bottom: 14px;
+      margin-bottom: 16px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
     }
 
     .step-number {
-      width: 24px;
-      height: 24px;
+      width: 28px;
+      height: 28px;
       background-color: var(--pastel-mint);
       color: var(--primary);
-      font-size: 13px;
-      font-weight: 700;
+      font-size: 14.5px;
+      font-weight: 800;
       border-radius: 50%;
       display: inline-flex;
       align-items: center;
@@ -269,16 +269,16 @@
     }
 
     .step-hint {
-      font-size: 13px;
+      font-size: 13.5px;
       color: var(--text-muted);
-      font-weight: 400;
+      font-weight: 500;
       margin-left: auto;
     }
 
     /* Button Grids */
     .btn-group {
       display: grid;
-      gap: 10px;
+      gap: 12px;
     }
 
     .grade-group {
@@ -292,7 +292,7 @@
     .class-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
+      gap: 10px;
     }
 
     @media (min-width: 600px) {
@@ -304,11 +304,11 @@
     /* Selectable Buttons */
     .select-btn {
       background-color: #ffffff;
-      border: 1.5px solid var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 14px 10px;
-      font-size: 15px;
-      font-weight: 600;
+      border: 1.8px solid var(--border-color);
+      border-radius: 12px;
+      padding: 16px 10px;
+      font-size: 18px;
+      font-weight: 700;
       color: var(--text-main);
       cursor: pointer;
       display: flex;
@@ -316,6 +316,7 @@
       align-items: center;
       justify-content: center;
       gap: 4px;
+      min-height: 64px;
       transition: all 0.15s ease-in-out;
       user-select: none;
     }
@@ -334,42 +335,45 @@
       background-color: var(--primary);
       border-color: var(--primary);
       color: #ffffff;
-      box-shadow: 0 4px 10px rgba(45, 106, 79, 0.25);
+      box-shadow: 0 4px 12px rgba(45, 106, 79, 0.28);
     }
 
     .select-btn.active .btn-sub {
-      color: rgba(255, 255, 255, 0.85);
+      color: rgba(255, 255, 255, 0.9);
     }
 
     .btn-sub {
-      font-size: 11px;
-      font-weight: 400;
+      font-size: 12.5px;
+      font-weight: 500;
       color: var(--text-muted);
     }
 
     .class-btn {
-      padding: 12px 6px;
-      font-size: 15px;
-      border-radius: var(--radius-sm);
+      padding: 14px 6px;
+      font-size: 17px;
+      font-weight: 700;
+      min-height: 52px;
+      border-radius: 10px;
     }
 
     .placeholder-box {
       background-color: #f8faf8;
-      border: 1.5px dashed var(--border-color);
-      border-radius: var(--radius-md);
-      padding: 24px;
+      border: 1.8px dashed var(--border-color);
+      border-radius: 12px;
+      padding: 26px 20px;
       text-align: center;
       color: var(--text-muted);
-      font-size: 14px;
+      font-size: 15px;
+      line-height: 1.6;
     }
 
     /* Class Info Display Box */
     .info-card {
       background: linear-gradient(135deg, #f0fdf4 0%, #e8f5e9 100%);
-      border: 1.5px solid #a7f3d0;
-      border-radius: var(--radius-lg);
-      padding: 20px;
-      margin-bottom: 20px;
+      border: 1.8px solid #a7f3d0;
+      border-radius: 14px;
+      padding: 22px;
+      margin-bottom: 22px;
     }
 
     .info-header {
@@ -377,23 +381,23 @@
       justify-content: space-between;
       align-items: center;
       margin-bottom: 16px;
-      border-bottom: 1px solid #c8e6c9;
-      padding-bottom: 10px;
+      border-bottom: 1.5px solid #c8e6c9;
+      padding-bottom: 12px;
     }
 
     .info-badge {
       background-color: var(--primary);
       color: #ffffff;
-      padding: 4px 12px;
+      padding: 5px 14px;
       border-radius: var(--radius-full);
-      font-size: 13px;
-      font-weight: 700;
+      font-size: 14.5px;
+      font-weight: 800;
       letter-spacing: -0.2px;
     }
 
     .info-time {
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 14.5px;
+      font-weight: 700;
       color: var(--primary);
     }
 
@@ -406,19 +410,19 @@
     @media (max-width: 500px) {
       .info-grid {
         grid-template-columns: 1fr;
-        gap: 10px;
+        gap: 12px;
       }
     }
 
     .info-item {
-      background-color: rgba(255, 255, 255, 0.85);
-      padding: 12px 16px;
-      border-radius: var(--radius-md);
+      background-color: rgba(255, 255, 255, 0.9);
+      padding: 14px 18px;
+      border-radius: 10px;
       border: 1px solid #d1fae5;
     }
 
     .info-label {
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--text-muted);
       margin-bottom: 4px;
@@ -428,28 +432,28 @@
     }
 
     .info-value {
-      font-size: 17px;
-      font-weight: 700;
+      font-size: 19px;
+      font-weight: 800;
       color: var(--primary-hover);
     }
 
     .info-missing {
       color: #d97706;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 15px;
+      font-weight: 700;
     }
 
     /* Observation Form */
     .form-group {
-      margin-bottom: 16px;
+      margin-bottom: 18px;
     }
 
     .form-label {
       display: block;
-      font-size: 14px;
-      font-weight: 600;
+      font-size: 15.5px;
+      font-weight: 700;
       color: var(--text-main);
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
 
     .required-star {
@@ -459,10 +463,10 @@
 
     .form-input, .form-textarea, .form-select {
       width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid var(--border-color);
-      border-radius: var(--radius-md);
-      font-size: 14px;
+      padding: 14px 16px;
+      border: 1.8px solid var(--border-color);
+      border-radius: 12px;
+      font-size: 16px;
       font-family: inherit;
       color: var(--text-main);
       background-color: #ffffff;
@@ -472,33 +476,35 @@
 
     .form-input:focus, .form-textarea:focus, .form-select:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(45, 106, 79, 0.12);
+      box-shadow: 0 0 0 3.5px rgba(45, 106, 79, 0.15);
     }
 
     .form-textarea {
-      min-height: 160px;
+      min-height: 180px;
+      font-size: 16.5px;
       resize: vertical;
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
     /* Quick Keyword Tags */
     .quick-tags {
       display: flex;
       flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 10px;
+      gap: 8px;
+      margin-bottom: 12px;
     }
 
     .tag-title {
-      font-size: 12px;
+      font-size: 13.5px;
       color: var(--text-muted);
-      margin-bottom: 6px;
-      font-weight: 500;
+      margin-bottom: 8px;
+      font-weight: 600;
     }
 
     .quick-tag-btn {
-      font-size: 12px;
-      padding: 6px 12px;
+      font-size: 13.5px;
+      font-weight: 600;
+      padding: 8px 14px;
       border-radius: var(--radius-full);
       background-color: var(--pastel-tag);
       color: var(--primary);
@@ -516,8 +522,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 6px;
-      font-size: 12px;
+      margin-top: 8px;
+      font-size: 13.5px;
       color: var(--text-muted);
     }
 
@@ -527,23 +533,23 @@
       background: linear-gradient(135deg, #2d6a4f 0%, #40916c 100%);
       color: #ffffff;
       border: none;
-      border-radius: var(--radius-md);
-      padding: 16px;
-      font-size: 16px;
-      font-weight: 700;
+      border-radius: 14px;
+      padding: 18px 24px;
+      font-size: 19.5px;
+      font-weight: 800;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
-      box-shadow: 0 4px 14px rgba(45, 106, 79, 0.25);
+      box-shadow: 0 5px 16px rgba(45, 106, 79, 0.28);
       transition: all 0.2s ease;
     }
 
     .btn-submit:hover:not(:disabled) {
       background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
       transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(45, 106, 79, 0.3);
+      box-shadow: 0 7px 20px rgba(45, 106, 79, 0.32);
     }
 
     .btn-submit:active:not(:disabled) {
@@ -942,59 +948,146 @@
 
     @media (max-width: 600px) {
       .container {
-        padding: 12px 14px 36px;
+        padding: 14px 12px 48px;
+        width: 100%;
       }
       .app-header {
-        padding: 20px 18px 22px;
-        margin-bottom: 16px;
-        border-radius: 14px;
+        padding: 26px 20px 28px;
+        margin-bottom: 20px;
+        border-radius: 16px;
+      }
+      .school-tag {
+        font-size: 13.5px;
+        font-weight: 700;
+        padding: 5px 13px;
+        margin-bottom: 10px;
       }
       .app-title {
-        font-size: 22px;
-        letter-spacing: -0.3px;
+        font-size: 25px;
+        font-weight: 800;
+        letter-spacing: -0.4px;
+        margin-bottom: 8px;
       }
       .app-subtitle {
-        font-size: 13.5px;
-        line-height: 1.5;
+        font-size: 15px;
+        line-height: 1.6;
+        opacity: 0.95;
       }
       .card {
-        padding: 18px 16px;
-        margin-bottom: 16px;
-        border-radius: 12px;
+        padding: 24px 18px;
+        margin-bottom: 20px;
+        border-radius: 16px;
       }
       .card-title {
-        font-size: 16.5px;
+        font-size: 18.5px;
+        font-weight: 800;
+        margin-bottom: 16px;
+      }
+      .step-number {
+        width: 28px;
+        height: 28px;
+        font-size: 14.5px;
+        font-weight: 800;
+      }
+      .step-hint {
+        font-size: 13.5px;
       }
       .select-btn {
-        padding: 13px 8px;
-        font-size: 15.5px;
-        min-height: 52px;
+        padding: 16px 8px;
+        font-size: 18px;
+        font-weight: 700;
+        min-height: 64px;
+        border-radius: 12px;
+      }
+      .select-btn .btn-sub {
+        font-size: 13px;
+        margin-top: 4px;
       }
       .class-grid {
         grid-template-columns: repeat(4, 1fr);
-        gap: 6px;
+        gap: 8px;
       }
       .class-btn {
-        padding: 11px 4px;
-        font-size: 15px;
+        padding: 14px 4px;
+        font-size: 17.5px;
         font-weight: 700;
-        min-height: 44px;
+        min-height: 52px;
+        border-radius: 10px;
+      }
+      .placeholder-box {
+        padding: 26px 16px;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      .info-card {
+        padding: 20px 16px;
+        border-radius: 14px;
+      }
+      .info-badge {
+        font-size: 14px;
+        padding: 5px 12px;
+        font-weight: 800;
+      }
+      .info-time {
+        font-size: 14px;
+        font-weight: 700;
+      }
+      .info-item {
+        padding: 12px 14px;
+        border-radius: 10px;
+      }
+      .info-label {
+        font-size: 13px;
+      }
+      .info-value {
+        font-size: 19px;
+        font-weight: 800;
+      }
+      .form-label {
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 8px;
+      }
+      .quick-tags {
+        gap: 7px;
+        margin-bottom: 12px;
+      }
+      .tag-title {
+        font-size: 13.5px;
+      }
+      .quick-tag-btn {
+        font-size: 13.5px;
+        padding: 8px 13px;
       }
       .form-textarea {
-        font-size: 16px; /* 스마트폰 키보드 입력 시 브라우저 자동 확대 방지 및 쾌적한 가독성 */
-        min-height: 140px;
-        line-height: 1.55;
+        font-size: 16.5px; /* 스마트폰 가독성 극대화 및 iOS/Android 자동 줌 방지 최적 크기 */
+        min-height: 170px;
+        padding: 16px 16px;
+        line-height: 1.65;
+        border-radius: 12px;
+      }
+      .textarea-footer {
+        font-size: 13px;
+        margin-top: 8px;
       }
       .btn-submit {
-        padding: 16px;
-        font-size: 17px;
+        padding: 18px 20px;
+        font-size: 19.5px;
         font-weight: 800;
-        border-radius: 12px;
+        border-radius: 14px;
+        min-height: 58px;
+      }
+      #obsSubmitSuccessBanner {
+        padding: 24px 18px;
+        border-radius: 16px;
       }
       #obsSubmitSuccessBanner .btn-nav {
         flex: 1 1 180px;
         justify-content: center;
         text-align: center;
+        padding: 13px 18px;
+        font-size: 15px;
+        border-radius: 10px;
       }
     }
 
