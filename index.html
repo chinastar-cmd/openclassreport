@@ -105,13 +105,27 @@
 
     .container {
       width: 100%;
-      max-width: 680px;
+      max-width: 720px;
       margin: 0 auto;
       padding: 0;
       box-sizing: border-box;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 16px;
+    }
+
+    #parentMainView {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .parent-card-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
     .container.admin-view-mode {
@@ -232,7 +246,7 @@
     }
 
     .app-title {
-      font-size: 1.35rem;
+      font-size: 1.52rem;
       font-weight: 700;
       color: var(--green-700);
       display: flex;
@@ -244,9 +258,9 @@
     }
 
     .app-subtitle {
-      font-size: 0.88rem;
+      font-size: 1.0rem;
       color: var(--text-muted);
-      line-height: 1.5;
+      line-height: 1.55;
       margin: 0;
     }
 
@@ -254,9 +268,9 @@
       background: var(--green-50);
       border: 1.5px solid var(--border-color);
       color: var(--green-700);
-      padding: 9px 18px;
+      padding: 10px 20px;
       border-radius: var(--radius-sm);
-      font-size: 0.9rem;
+      font-size: 0.98rem;
       font-weight: 700;
       cursor: pointer;
       display: inline-flex;
@@ -276,11 +290,11 @@
     .parent-school-badge {
       display: inline-flex;
       align-items: center;
-      font-size: 13px;
+      font-size: 14.5px;
       font-weight: 700;
       color: var(--green-700);
       background-color: var(--green-100);
-      padding: 4px 12px;
+      padding: 5px 14px;
       border-radius: var(--radius-full);
       margin-bottom: 4px;
     }
@@ -290,7 +304,7 @@
       background-color: #ffffff;
       border: 1px solid var(--border-color);
       border-radius: var(--radius-lg);
-      padding: 24px 20px;
+      padding: 26px 22px;
       box-shadow: var(--shadow-sm);
       width: 100%;
       box-sizing: border-box;
@@ -301,7 +315,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      font-size: 1.18rem;
+      font-size: 1.32rem;
       font-weight: 700;
       color: var(--green-700);
       margin-bottom: 18px;
@@ -313,19 +327,19 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 28px;
-      height: 28px;
+      width: 32px;
+      height: 32px;
       background-color: var(--green-600);
       color: #ffffff;
       border-radius: 50%;
-      font-size: 14.5px;
+      font-size: 16.5px;
       font-weight: 800;
       flex-shrink: 0;
     }
 
     .step-hint {
       margin-left: auto;
-      font-size: 12.5px;
+      font-size: 14px;
       font-weight: 500;
       color: var(--text-muted);
     }
@@ -345,9 +359,9 @@
       background: #f8faf8;
       border: 2px solid var(--border-color);
       border-radius: var(--radius-sm);
-      padding: 13px 8px;
+      padding: 15px 10px;
       text-align: center;
-      font-size: 1.05rem;
+      font-size: 1.18rem;
       font-weight: 700;
       color: var(--text-main);
       cursor: pointer;
@@ -358,6 +372,7 @@
       justify-content: center;
       align-items: center;
       touch-action: manipulation;
+      min-height: 56px;
     }
 
     .select-btn:hover, .grade-chip-label:hover, .period-chip-label:hover {
@@ -377,10 +392,10 @@
     }
 
     .btn-sub {
-      font-size: 12px;
+      font-size: 13.5px;
       font-weight: 500;
       color: var(--text-muted);
-      margin-top: 2px;
+      margin-top: 3px;
     }
 
     /* Class Chips */
@@ -394,9 +409,9 @@
       background: #f8faf8;
       border: 1.5px solid var(--border-color);
       border-radius: var(--radius-sm);
-      padding: 11px 4px;
+      padding: 13px 4px;
       text-align: center;
-      font-size: 0.98rem;
+      font-size: 1.1rem;
       font-weight: 600;
       color: var(--text-main);
       cursor: pointer;
@@ -405,7 +420,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 48px;
+      min-height: 52px;
     }
 
     .class-btn:hover, .class-chip-label:hover {
@@ -425,10 +440,10 @@
       background-color: #f8faf8;
       border: 1.8px dashed var(--border-color);
       border-radius: 12px;
-      padding: 26px 20px;
+      padding: 28px 20px;
       text-align: center;
       color: var(--text-muted);
-      font-size: 15px;
+      font-size: 16.5px;
       line-height: 1.6;
     }
 
@@ -453,15 +468,15 @@
     .info-badge {
       background-color: var(--primary);
       color: #ffffff;
-      padding: 5px 14px;
+      padding: 6px 16px;
       border-radius: var(--radius-full);
-      font-size: 14.5px;
+      font-size: 16.5px;
       font-weight: 800;
       letter-spacing: -0.2px;
     }
 
     .info-time {
-      font-size: 14.5px;
+      font-size: 16.5px;
       font-weight: 700;
       color: var(--primary);
     }
@@ -481,13 +496,13 @@
 
     .info-item {
       background-color: rgba(255, 255, 255, 0.9);
-      padding: 14px 18px;
+      padding: 15px 18px;
       border-radius: 10px;
       border: 1px solid #d1fae5;
     }
 
     .info-label {
-      font-size: 13px;
+      font-size: 14.5px;
       font-weight: 600;
       color: var(--text-muted);
       margin-bottom: 4px;
@@ -497,7 +512,7 @@
     }
 
     .info-value {
-      font-size: 19px;
+      font-size: 22px;
       font-weight: 800;
       color: var(--primary-hover);
     }
@@ -515,7 +530,7 @@
 
     .form-label {
       display: block;
-      font-size: 15.5px;
+      font-size: 17.5px;
       font-weight: 700;
       color: var(--text-main);
       margin-bottom: 8px;
@@ -528,10 +543,10 @@
 
     .form-input, .form-textarea, .form-select {
       width: 100%;
-      padding: 14px 16px;
+      padding: 15px 16px;
       border: 1.8px solid var(--border-color);
       border-radius: 12px;
-      font-size: 16px;
+      font-size: 17.5px;
       font-family: inherit;
       color: var(--text-main);
       background-color: #ffffff;
@@ -545,8 +560,8 @@
     }
 
     .form-textarea {
-      min-height: 180px;
-      font-size: 16.5px;
+      min-height: 200px;
+      font-size: 18.5px;
       resize: vertical;
       line-height: 1.65;
     }
@@ -560,16 +575,16 @@
     }
 
     .tag-title {
-      font-size: 13.5px;
+      font-size: 15px;
       color: var(--text-muted);
       margin-bottom: 8px;
       font-weight: 600;
     }
 
     .quick-tag-btn {
-      font-size: 13.5px;
+      font-size: 15px;
       font-weight: 600;
-      padding: 8px 14px;
+      padding: 9px 15px;
       border-radius: var(--radius-full);
       background-color: var(--pastel-tag);
       color: var(--primary);
@@ -588,7 +603,7 @@
       justify-content: space-between;
       align-items: center;
       margin-top: 8px;
-      font-size: 13.5px;
+      font-size: 15px;
       color: var(--text-muted);
     }
 
@@ -599,8 +614,8 @@
       color: #ffffff;
       border: none;
       border-radius: 14px;
-      padding: 18px 24px;
-      font-size: 19.5px;
+      padding: 20px 28px;
+      font-size: 22px;
       font-weight: 800;
       cursor: pointer;
       display: flex;
@@ -1010,30 +1025,52 @@
      * ============================================================================== */
     #parentMainView {
       width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .parent-card-wrap {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
     @media (max-width: 768px) {
       body {
-        padding: 10px 8px 44px !important;
+        padding: 10px 8px 48px !important;
       }
       .container {
         width: 100% !important;
         max-width: 100% !important;
         padding: 0 !important;
-        gap: 10px !important;
+        gap: 14px !important;
+      }
+      #parentMainView {
+        gap: 14px !important;
+      }
+      .parent-card-wrap {
+        gap: 14px !important;
       }
       .app-header {
-        padding: 16px 14px !important;
-        border-radius: 12px !important;
+        padding: 18px 16px !important;
+        border-radius: 14px !important;
         flex-direction: column !important;
         align-items: flex-start !important;
-        gap: 10px !important;
+        gap: 12px !important;
+      }
+      .parent-school-badge {
+        font-size: 14.5px !important;
+        padding: 5px 14px !important;
       }
       .app-title {
-        font-size: 1.25rem !important;
+        font-size: 1.48rem !important;
+        line-height: 1.35 !important;
       }
       .app-subtitle {
-        font-size: 0.85rem !important;
+        font-size: 0.98rem !important;
+        line-height: 1.55 !important;
       }
       .header-actions {
         width: 100% !important;
@@ -1041,93 +1078,192 @@
         justify-content: flex-end !important;
       }
       .btn-admin-access {
-        padding: 7px 14px !important;
-        font-size: 0.85rem !important;
+        padding: 8px 16px !important;
+        font-size: 0.95rem !important;
       }
       .card {
-        padding: 18px 14px !important;
-        border-radius: 12px !important;
+        padding: 20px 16px !important;
+        border-radius: 14px !important;
       }
       .card-title {
-        font-size: 1.05rem !important;
-        margin-bottom: 14px !important;
-        padding-bottom: 10px !important;
+        font-size: 1.25rem !important;
+        margin-bottom: 16px !important;
+        padding-bottom: 12px !important;
+        gap: 10px !important;
       }
       .step-number {
-        width: 26px !important;
-        height: 26px !important;
-        font-size: 13.5px !important;
+        width: 31px !important;
+        height: 31px !important;
+        font-size: 16px !important;
       }
       .step-hint {
-        font-size: 11.5px !important;
+        font-size: 13.5px !important;
       }
       .grade-group {
         grid-template-columns: repeat(3, 1fr) !important;
-        gap: 6px !important;
+        gap: 7px !important;
       }
       .period-group {
         grid-template-columns: repeat(2, 1fr) !important;
-        gap: 6px !important;
+        gap: 7px !important;
       }
       .select-btn {
-        padding: 12px 2px !important;
-        font-size: 15.5px !important;
-        min-height: 48px !important;
+        padding: 14px 4px !important;
+        font-size: 18.5px !important;
+        min-height: 56px !important;
+        font-weight: 700 !important;
       }
       .select-btn .btn-sub {
-        font-size: 11px !important;
+        font-size: 13px !important;
+        margin-top: 3px !important;
       }
       .class-grid {
         grid-template-columns: repeat(4, 1fr) !important;
         gap: 6px !important;
       }
       .class-btn {
-        padding: 10px 2px !important;
-        font-size: 15px !important;
-        min-height: 44px !important;
+        padding: 12px 2px !important;
+        font-size: 17.5px !important;
+        min-height: 52px !important;
+        font-weight: 700 !important;
       }
-      .form-textarea {
+      .placeholder-box {
+        font-size: 16.5px !important;
+        padding: 24px 16px !important;
+      }
+      .info-card {
+        padding: 20px 16px !important;
+      }
+      .info-badge {
         font-size: 16px !important;
-        padding: 12px 14px !important;
+        padding: 6px 14px !important;
+      }
+      .info-time {
+        font-size: 16px !important;
+      }
+      .info-label {
+        font-size: 14.5px !important;
+      }
+      .info-value {
+        font-size: 21.5px !important;
+      }
+      #obsSelectedClassBanner {
+        padding: 14px 16px !important;
+      }
+      #obsBannerTargetText {
+        font-size: 16.5px !important;
+      }
+      .tag-title {
+        font-size: 15px !important;
+        margin-bottom: 10px !important;
       }
       .quick-tags {
-        gap: 6px !important;
+        gap: 7px !important;
       }
       .quick-tag-btn {
-        font-size: 12.5px !important;
-        padding: 7px 11px !important;
+        font-size: 14.5px !important;
+        padding: 9px 13px !important;
+      }
+      .form-label {
+        font-size: 17.5px !important;
+      }
+      .form-textarea {
+        font-size: 18.5px !important;
+        min-height: 200px !important;
+        padding: 15px 15px !important;
+        line-height: 1.65 !important;
+      }
+      .textarea-footer {
+        font-size: 14.5px !important;
       }
       .btn-submit {
-        padding: 16px 20px !important;
-        font-size: 17.5px !important;
-        border-radius: 12px !important;
+        padding: 18px 24px !important;
+        font-size: 21px !important;
+        border-radius: 14px !important;
+        min-height: 60px !important;
+      }
+      #obsSubmitSuccessBanner {
+        padding: 22px 18px !important;
       }
     }
 
     @media (max-width: 480px) {
       body {
-        padding: 6px 6px 40px !important;
+        padding: 8px 6px 44px !important;
+      }
+      .container {
+        gap: 12px !important;
+      }
+      #parentMainView {
+        gap: 12px !important;
+      }
+      .parent-card-wrap {
+        gap: 12px !important;
       }
       .app-header {
-        padding: 14px 12px !important;
+        padding: 16px 14px !important;
+        border-radius: 13px !important;
+      }
+      .app-title {
+        font-size: 1.42rem !important;
+      }
+      .app-subtitle {
+        font-size: 0.95rem !important;
       }
       .card {
-        padding: 16px 10px !important;
+        padding: 18px 14px !important;
+        border-radius: 13px !important;
+      }
+      .card-title {
+        font-size: 1.2rem !important;
+        margin-bottom: 14px !important;
+      }
+      .step-number {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 15.5px !important;
+      }
+      .step-hint {
+        font-size: 13px !important;
       }
       .grade-group {
-        gap: 5px !important;
+        gap: 6px !important;
       }
       .period-group {
-        gap: 5px !important;
+        gap: 6px !important;
       }
       .class-grid {
-        gap: 4px !important;
+        gap: 5px !important;
       }
       .select-btn {
-        font-size: 15px !important;
+        font-size: 18px !important;
+        min-height: 54px !important;
+        padding: 13px 2px !important;
+      }
+      .select-btn .btn-sub {
+        font-size: 12.5px !important;
       }
       .class-btn {
-        font-size: 14.5px !important;
+        font-size: 17px !important;
+        min-height: 50px !important;
+        padding: 11px 2px !important;
+      }
+      .placeholder-box {
+        font-size: 15.5px !important;
+        padding: 22px 12px !important;
+      }
+      .quick-tag-btn {
+        font-size: 14px !important;
+        padding: 8px 12px !important;
+      }
+      .form-textarea {
+        font-size: 18px !important;
+        min-height: 190px !important;
+      }
+      .btn-submit {
+        padding: 17px 20px !important;
+        font-size: 20px !important;
+        min-height: 58px !important;
       }
     }
 
